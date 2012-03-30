@@ -68,7 +68,7 @@ public:
    //---
    // Sensor Model State
    //---
-   virtual std::string getSensorModelState() const;
+   virtual std::string getModelState() const;
 
    //---
    // Core Photogrammetry
@@ -94,8 +94,8 @@ public:
                 csm::WarningList* warnings = NULL) const;
    virtual csm::EcefCoord imageToGround(
                 const csm::ImageCoord& imagePt,
-                double height,
                 const std::vector<double> imageCovariance,
+                double height, double heightVariance,
                 std::vector<double>& groundCovariance,
                 double desired_precision = 0.001,
                 double* achieved_precision = NULL,
@@ -110,7 +110,6 @@ public:
 
    virtual std::vector<double> imageToRemoteImagingLocus(
                 const csm::ImageCoord& imagePt,
-                const csm::EcefCoord& groundPt,
                 double desired_precision = 0.001,
                 double* achieved_precision = NULL,
                 csm::WarningList* warnings = NULL) const;
@@ -158,7 +157,6 @@ public:
    //---
    virtual std::vector<double> computeGroundPartials(const csm::EcefCoord& groundPt);
 
-   typedef std::pair<double, double> SensorPartials;
    virtual SensorPartials computeSensorPartials(
                 int index,
                 const csm::EcefCoord& groundPt,

@@ -27,6 +27,13 @@
 
 #include "csm/CSMPlugin.h"
 
+#include <string>
+#include <vector>
+#include <map>
+
+class TSMPlugin;
+class tsm_ISD;
+
 //*****************************************************************************
 // CLASS:  csm2to3plugin
 //> This class TODO
@@ -48,43 +55,54 @@ public:
    virtual std::string getReleaseDate() const;
    virtual int getCSMVersion() const;
 
-   virtual int getNSensorModels() const;
-   virtual std::string getSensorModelName(int index) const;
+   virtual size_t getNumModels() const;
+   virtual std::string getModelName(size_t index) const;
 
-   virtual int getSensorModelVersion(const std::string& sensor_model_name) const;
+   virtual int getModelVersion(const std::string& modelName) const;
 
-   virtual bool canSensorModelBeConstructedFromState(
-      const std::string& sensor_model_name,
-      const std::string& sensor_model_state,
+   virtual bool canModelBeConstructedFromState(
+      const std::string& modelName,
+      const std::string& modelState,
       csm::WarningList* warnings = NULL) const;
-   virtual bool canSensorModelBeConstructedFromISD(
-      const csm::Isd& image_support_data,
-      const std::string& sensor_model_name,
-      csm::WarningList* warnings = NULL) const;
-
-   virtual csm::SensorModel* constructSensorModelFromState(
-      const std::string& sensor_model_state,
-      csm::WarningList* warnings = NULL) const;
-   virtual csm::SensorModel* constructSensorModelFromISD(
-      const csm::Isd& image_support_data,
-      const std::string& sensor_model_name,
+   virtual bool canModelBeConstructedFromISD(
+      const csm::Isd& imageSupportData,
+      const std::string& modelName,
       csm::WarningList* warnings = NULL) const;
 
-   virtual std::string getSensorModelNameFromSensorModelState(
-      const std::string& sensor_model_state,
+   virtual csm::Model* constructModelFromState(
+      const std::string& modelState,
+      csm::WarningList* warnings = NULL) const;
+   virtual csm::Model* constructModelFromISD(
+      const csm::Isd& imageSupportData,
+      const std::string& modelName,
       csm::WarningList* warnings = NULL) const;
 
-   virtual bool canISDBeConvertedToSensorModelState(
-      const csm::Isd& image_support_data,
-      const std::string& sensor_model_name,
+   virtual std::string getModelNameFromModelState(
+      const std::string& modelState,
       csm::WarningList* warnings = NULL) const;
-   virtual std::string convertISDToSensorModelState(
-      const csm::Isd& image_support_data,
-      const std::string& sensor_model_name,
+
+   virtual bool canISDBeConvertedToModelState(
+      const csm::Isd& imageSupportData,
+      const std::string& modelName,
+      csm::WarningList* warnings = NULL) const;
+   virtual std::string convertISDToModelState(
+      const csm::Isd& imageSupportData,
+      const std::string& modelName,
       csm::WarningList* warnings = NULL) const;
 
 private:
    static csm2to3plugin INSTANCE;
+
+   static tsm_ISD* convertIsd(const csm::Isd& isd);
+
+   void loadTsmPlugins();
+   void loadNameMap();
+
+   typedef std::vector<std::string> SensorNameList;
+   typedef std::map<std::string, const TSMPlugin*> SensorNameMap;
+
+   SensorNameList theOrderedNames;
+   SensorNameMap  theNameMap;
 };
 
 
