@@ -1,14 +1,23 @@
 
+HEADERS=csm2to3plugin.h
 
-HEADERS=CSMCovarianceModel.h CSMFourParameterCorrelationModel.h CSMError.h CSMImageSupportData.h CSMISDByteStream.h CSMISDFilename.h CSMISDNITF20.h CSMISDNITF21.h CSMMisc.h CSMModel.h CSMParameterSharing.h CSMPlugin.h CSMSensorModel.h CSMSensorTypeAndMode.h CSMWarning.h
+OBJS=csm2to3plugin.o
 
-OBJS=CSMPlugin.o CSMFourParameterCorrelationModel.o
+CSMHOME=/programs/origin/users/sminster/csm-reform
+TSMHOME=/programs/ipl/gots/csm/tsm-2A
 
-LIBNAME=libcsmapi
-LIBVERSION=3
+INCLUDES=-I$(CSMHOME)/$(ARCH)/include -I$(TSMHOME)/$(ARCH)/include
+
+LINK_LIB_CSM=-L$(CSMHOME)/$(ARCH)/lib -lcsmapi
+LINK_LIB_TSM=-L$(TSMHOME)/$(ARCH)/lib -ltsmapi
+
+LIBNAME=libcsm2to3
+LIBVERSION=1.0
 
 LIBRARY=$(LIBNAME).so.$(LIBVERSION)
-LIBS=-lm -ldl
+LIBS=$(LINK_LIB_CSM) $(LINK_LIB_TSM) -lm -ldl
+
+INSTDIR=$(PWD)/linux64
 
 MKDIR=mkdir
 CP=cp -f
@@ -17,10 +26,10 @@ LN=ln -s
 LD=$(CC)
 
 %.o: %.cpp
-	$(CC) -c $(COPTS) $< -o $@
+	$(CC) -c $(COPTS) $(INCLUDES) $< -o $@
 
 %.o: %.cc
-	$(CC) -c $(COPTS) $< -o $@
+	$(CC) -c $(COPTS) $(INCLUDES) $< -o $@
 
 $(LIBRARY): $(OBJS)
 	$(LD) $(COPTS) $(LDOPTS) $^ $(LIBS) -o $@
