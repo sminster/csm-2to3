@@ -1,7 +1,7 @@
 
-HEADERS=csm2to3plugin.h
+HEADERS=csm2to3plugin.h csm2to3model.h
 
-OBJS=csm2to3plugin.o
+OBJS=csm2to3plugin.o csm2to3model.o
 
 CSMHOME=/programs/origin/users/sminster/csm-reform
 TSMHOME=/programs/ipl/gots/csm/tsm-2A
@@ -45,3 +45,6 @@ install::
 
 clean::
 	$(RM) $(OBJS) $(LIBRARY) *~
+
+package::
+	$(TAR) -czvf csm-2to3.$(shell date '+%Y%m%d').tar.gz Makefile* CSM*
