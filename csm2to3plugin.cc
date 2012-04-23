@@ -28,9 +28,7 @@
 
 #include <csm/CSMSensorModel.h>
 #include <csm/CSMISDByteStream.h>
-#include <csm/CSMISDFilename.h>
-#include <csm/CSMISDNITF20.h>
-#include <csm/CSMISDNITF21.h>
+#include <csm/CSMISDNITF.h>
 
 #include <tsm/TSMPlugin.h>
 #include <tsm/TSMWarning.h>
@@ -88,9 +86,9 @@ std::string csm2to3plugin::getReleaseDate() const
 //*****************************************************************************
 // csm2to3plugin::getManufacturer
 //*****************************************************************************
-int csm2to3plugin::getCSMVersion() const
+csm::Version csm2to3plugin::getCSMVersion() const
 {
-   return 3;                        // TODO
+   return CURRENT_CSM_VERSION;
 }
 
 //*****************************************************************************
@@ -124,6 +122,15 @@ std::string csm2to3plugin::getModelName(size_t index) const
    }
 
    return theOrderedNames[index];
+}
+
+//*****************************************************************************
+// csm2to3plugin::getModelFamily
+//*****************************************************************************
+std::string csm2to3plugin::getModelFamily(size_t index) const
+{
+   // always a sensor model
+   return CSM_SENSOR_MODEL_FAMILY;
 }
 
 //*****************************************************************************
@@ -408,10 +415,10 @@ void convertTres(int& numTres, tre*& TREs,
    TREs = new tre[srcTres.size()];
    for(size_t i = 0; i < srcTres.size(); ++i)
    {
-      strncpy(TREs[i].name, srcTres[i].name.c_str(), 6);
+      strncpy(TREs[i].name, srcTres[i].name().c_str(), 6);
       TREs[i].name[6] = '\0';
-      TREs[i].length = srcTres[i].length;
-      TREs[i].record = strdup(srcTres[i].data.c_str());
+      TREs[i].length = srcTres[i].length();
+      TREs[i].record = strdup(srcTres[i].data().c_str());
    }
 }
 
@@ -426,28 +433,28 @@ template<class TSM_NITF_ISD>
 TSM_NITF_ISD* convertNitfIsd(const csm::NitfIsd& nIsd)
 {
    TSM_NITF_ISD* tsm = new TSM_NITF_ISD();
-   tsm->fileHeader = nIsd.fileHeader;
+   tsm->fileHeader = nIsd.fileHeader();
 
-   convertTres(tsm->numTREs, tsm->fileTREs, nIsd.fileTREs);
+   convertTres(tsm->numTREs, tsm->fileTREs, nIsd.fileTREs());
 
-   tsm->numDESs = nIsd.fileDESs.size();
-   tsm->fileDESs = new des[nIsd.fileDESs.size()];
-   for(size_t i = 0; i < nIsd.fileDESs.size(); ++i)
+   tsm->numDESs = nIsd.fileDESs().size();
+   tsm->fileDESs = new des[tsm->numDESs];
+   for(size_t i = 0; i < tsm->numDESs; ++i)
    {
-      tsm->fileDESs[i].desShLength = nIsd.fileDESs[i].subHeader.length();
-      tsm->fileDESs[i].desSh = strdup(nIsd.fileDESs[i].subHeader.c_str());
-      tsm->fileDESs[i].desDataLength = nIsd.fileDESs[i].data.length();
-      tsm->fileDESs[i].desData = strdup(nIsd.fileDESs[i].data.c_str());
+      tsm->fileDESs[i].desShLength = nIsd.fileDESs()[i].subHeader().length();
+      tsm->fileDESs[i].desSh = strdup(nIsd.fileDESs()[i].subHeader().c_str());
+      tsm->fileDESs[i].desDataLength = nIsd.fileDESs()[i].data().length();
+      tsm->fileDESs[i].desData = strdup(nIsd.fileDESs()[i].data().c_str());
    }
 
-   tsm->numImages = nIsd.images.size();
-   tsm->images = new image[nIsd.images.size()];
-   for(size_t i = 0; i < nIsd.fileDESs.size(); ++i)
+   tsm->numImages = nIsd.images().size();
+   tsm->images = new image[tsm->numImages];
+   for(size_t i = 0; i < tsm->numImages; ++i)
    {
-      tsm->images[i].imageSubHeader = nIsd.images[i].subHeader;
+      tsm->images[i].imageSubHeader = nIsd.images()[i].subHeader();
       convertTres(tsm->images[i].numTREs,
                   tsm->images[i].imageTREs,
-                  nIsd.images[i].imageTREs);
+                  nIsd.images()[i].imageTREs());
    }
 
    return tsm;
@@ -462,15 +469,14 @@ tsm_ISD* csm2to3plugin::convertIsd(const csm::Isd& isd)
    {
       const csm::BytestreamIsd& bIsd = dynamic_cast<const csm::BytestreamIsd&>(isd);
       bytestreamISD* tsm = new bytestreamISD();
-      tsm->_isd = bIsd.theData;
+      tsm->_isd = bIsd.data();
       return tsm;
    }
 
    if (isd.format() == "FILENAME")
    {
-      const csm::FilenameIsd& fIsd = dynamic_cast<const csm::FilenameIsd&>(isd);
       filenameISD* tsm = new filenameISD();
-      tsm->_filename = fIsd.theFilename;
+      tsm->_filename = isd.filename();
       return tsm;
    }
 
@@ -481,34 +487,6 @@ tsm_ISD* csm2to3plugin::convertIsd(const csm::Isd& isd)
       if (isd.format() == "NITF2.0")
       {
          return convertNitfIsd<NITF_2_0_ISD>(nIsd);
-#if 0
-         NITF_2_0_ISD* tsm = new NITF_2_0_ISD();
-         tsm->fileHeader = nIsd.fileHeader;
-
-         convertTres(tsm->numTREs, tsm->fileTREs, nIsd.fileTREs);
-
-         tsm->numDESs = nIsd.fileDESs.size();
-         tsm->fileDESs = new des[nIsd.fileDESs.size()];
-         for(size_t i = 0; i < nIsd.fileDESs.size(); ++i)
-         {
-            tsm->fileDESs[i].desShLength = nIsd.fileDESs[i].subHeader.length();
-            tsm->fileDESs[i].desSh = strdup(nIsd.fileDESs[i].subHeader.c_str());
-            tsm->fileDESs[i].desDataLength = nIsd.fileDESs[i].data.length();
-            tsm->fileDESs[i].desData = strdup(nIsd.fileDESs[i].data.c_str());
-         }
-
-         tsm->numImages = nIsd.images.size();
-         tsm->images = new image[nIsd.images.size()];
-         for(size_t i = 0; i < nIsd.fileDESs.size(); ++i)
-         {
-            tsm->images[i].imageSubHeader = nIsd.images[i].subHeader;
-            convertTres(tsm->images[i].numTREs,
-                        tsm->images[i].imageTREs,
-                        nIsd.images[i].imageTREs);
-         }
-
-         return tsm;
-#endif
       }
       if (isd.format() == "NITF2.1")
       {

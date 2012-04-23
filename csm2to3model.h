@@ -45,7 +45,7 @@ public:
       //> This is the destructor.
       //<
 
-   virtual int getVersion() const;
+   virtual csm::Version getVersion() const;
    virtual std::string getModelType() const;
    virtual std::string getModelName() const;
    virtual std::string getPedigree() const;
@@ -79,10 +79,8 @@ public:
                 double* achieved_precision = NULL,
                 csm::WarningList* warnings = NULL) const;
 
-   virtual csm::ImageCoord groundToImage(
-                const csm::EcefCoord& groundPt,
-                const std::vector<double> groundCovariance,
-                std::vector<double>& imageCovariance,
+   virtual csm::ImageCoordCovar groundToImage(
+                const csm::EcefCoordCovar& groundPt,
                 double desired_precision = 0.001,
                 double* achieved_precision = NULL,
                 csm::WarningList* warnings = NULL) const;
@@ -92,11 +90,9 @@ public:
                 double desired_precision = 0.001,
                 double* achieved_precision = NULL,
                 csm::WarningList* warnings = NULL) const;
-   virtual csm::EcefCoord imageToGround(
-                const csm::ImageCoord& imagePt,
-                const std::vector<double> imageCovariance,
+   virtual csm::EcefCoordCovar imageToGround(
+                const csm::ImageCoordCovar& imagePt,
                 double height, double heightVariance,
-                std::vector<double>& groundCovariance,
                 double desired_precision = 0.001,
                 double* achieved_precision = NULL,
                 csm::WarningList* warnings = NULL) const;
@@ -140,7 +136,7 @@ public:
    virtual int getNumParameters() const;
    virtual std::string getParameterName(int index) const;
    virtual bool isParameterShareable(int index) const;
-   virtual std::vector<csm::ParameterSharingCriteria>& getParameterSharingCriteria(int index) const;
+   virtual std::vector<csm::ParameterSharingCriteria> getParameterSharingCriteria(int index) const;
 
    virtual double getOriginalParameterValue(int index) const;
    virtual double getCurrentParameterValue(int index) const;
@@ -206,15 +202,13 @@ public:
                                                     csm::ParamType pType);
    virtual bool getCurrentGeometricCorrectionSwitch(int index) const;
 
-   virtual std::vector<std::vector<double> > getCurrentCrossCovarianceMatrix(
-                const csm::ImageCoord imagePt,
-                const csm::SensorModel* comparisonModel,
-                const csm::ImageCoord&  comparisonModelImagePt) const;
+   virtual std::vector<double> getCurrentCrossCovarianceMatrix(
+                const csm::SensorModel& comparisonModel,
+                const SensorModelList& otherModels = SensorModelList()) const;
 
-   virtual std::vector<std::vector<double> > getOriginalCrossCovarianceMatrix(
-                const csm::ImageCoord imagePt,
-                const csm::SensorModel* comparisonModel,
-                const csm::ImageCoord&  comparisonModelImagePt) const;
+   virtual std::vector<double> getOriginalCrossCovarianceMatrix(
+                const csm::SensorModel& comparisonModel,
+                const SensorModelList& otherModels = SensorModelList()) const;
 
    virtual csm::CovarianceModel* getCovarianceModel() const;
 
