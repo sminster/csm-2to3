@@ -22,6 +22,7 @@ INSTDIR=$(PWD)/linux64
 MKDIR=mkdir
 CP=cp -f
 LN=ln -s
+TAR=tar
 
 LD=$(CC)
 
@@ -47,4 +48,4 @@ clean::
 	$(RM) $(OBJS) $(LIBRARY) *~
 
 package::
-	$(TAR) -czvf csm-2to3.$(shell date '+%Y%m%d').tar.gz Makefile* CSM*
+	$(TAR) -czvf csm-2to3.$(shell date '+%Y%m%d').tar.gz Makefile* *.cc *.h
