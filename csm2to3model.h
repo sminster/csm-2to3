@@ -212,7 +212,6 @@ public:
 
    virtual csm::CovarianceModel* getCovarianceModel() const;
 
-   virtual std::vector<double> getUnmodeledError(const csm::ImageCoord& pt) const;
    virtual std::vector<double> getUnmodeledCrossCovariance(
                 const csm::ImageCoord& pt1,
                 const csm::ImageCoord& pt2) const;

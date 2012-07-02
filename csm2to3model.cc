@@ -1221,22 +1221,6 @@ csm::CovarianceModel* csm2to3model::getCovarianceModel() const
 }
 
 //*****************************************************************************
-// csm2to3model::getUnmodeledError
-//*****************************************************************************
-std::vector<double> csm2to3model::getUnmodeledError(const csm::ImageCoord& pt) const
-{
-   EXCEPTION_TRY("csm2to3model::getUnmodeledError");
-
-   CHECK_IMPL;
-
-   double covar[4] = {0., 0., 0., 0.};
-   DROP_WARNING(theImpl->getUnmodeledError(pt.line, pt.samp, covar));
-   return std::vector<double>(covar, covar+4);
-
-   EXCEPTION_RETHROW_CONVERT;
-}
-
-//*****************************************************************************
 // csm2to3model::getUnmodeledCrossCovariance
 //*****************************************************************************
 std::vector<double> csm2to3model::getUnmodeledCrossCovariance(
