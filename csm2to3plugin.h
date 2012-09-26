@@ -16,9 +16,10 @@
 // LIMITATIONS:       None
 //
 // SOFTWARE HISTORY:
-//
-//> 30MAR12 956F PTR#?????-IPL  S. Minster
-//               Initial Coding.
+//>
+//     Date          Author   Comment   
+//     -----------   ------   ------- 
+//     30-Mar-2012   SCM      Initial Coding
 //<
 //*****************************************************************************
 
@@ -36,8 +37,8 @@ class tsm_ISD;
 
 //*****************************************************************************
 // CLASS:  csm2to3plugin
-//> This class TODO
-//  
+//> This class implements the "maker" for a CSM version 3 model that is
+//  implemented by calling a CSM version 2 model implementation.
 //<
 //*****************************************************************************
 class csm2to3plugin : public csm::Plugin
