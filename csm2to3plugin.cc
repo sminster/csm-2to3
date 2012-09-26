@@ -132,13 +132,13 @@ std::string csm2to3plugin::getModelName(size_t index) const
 std::string csm2to3plugin::getModelFamily(size_t index) const
 {
    // always a sensor model
-   return CSM_RASTER_FAMILY;
+   return CSM_GEOMETRIC_MODEL_FAMILY CSM_RASTER_FAMILY;
 }
 
 //*****************************************************************************
 // csm2to3plugin::getModelVersion
 //*****************************************************************************
-int csm2to3plugin::getModelVersion(
+csm::Version csm2to3plugin::getModelVersion(
    const std::string& modelName) const
 {
    EXCEPTION_TRY("csm2to3plugin::getModelVersion");
@@ -155,7 +155,7 @@ int csm2to3plugin::getModelVersion(
    TSMWarning* w =
       it->second->getSensorModelVersion(modelName, version);
    if (w) delete w;
-   else return version;
+   else return csm::Version(version, 0);
 
    EXCEPTION_RETHROW_CONVERT;
 }

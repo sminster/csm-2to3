@@ -60,7 +60,7 @@ public:
    virtual std::string getModelName(size_t index) const;
    virtual std::string getModelFamily(size_t modelIndex) const;
 
-   virtual int getModelVersion(const std::string& modelName) const;
+   virtual csm::Version getModelVersion(const std::string& modelName) const;
 
    virtual bool canModelBeConstructedFromState(
       const std::string& modelName,

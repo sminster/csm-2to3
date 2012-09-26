@@ -829,7 +829,7 @@ csm2to3model::computeGroundPartials(const csm::EcefCoord& groundPt)
 //*****************************************************************************
 // csm2to3model::computeSensorPartials
 //*****************************************************************************
-csm::GeometricModel::SensorPartials csm2to3model::computeSensorPartials(
+csm::RasterGM::SensorPartials csm2to3model::computeSensorPartials(
    int index,
    const csm::EcefCoord& groundPt,
    double desired_precision,
@@ -857,7 +857,7 @@ csm::GeometricModel::SensorPartials csm2to3model::computeSensorPartials(
 //*****************************************************************************
 // csm2to3model::computeSensorPartials
 //*****************************************************************************
-csm::GeometricModel::SensorPartials csm2to3model::computeSensorPartials(
+csm::RasterGM::SensorPartials csm2to3model::computeSensorPartials(
    int index,
    const csm::ImageCoord& imagePt,
    const csm::EcefCoord& groundPt,
@@ -887,7 +887,7 @@ csm::GeometricModel::SensorPartials csm2to3model::computeSensorPartials(
 //*****************************************************************************
 // csm2to3model::computeAllSensorPartials
 //*****************************************************************************
-std::vector<csm::GeometricModel::SensorPartials>
+std::vector<csm::RasterGM::SensorPartials>
 csm2to3model::computeAllSensorPartials(
    const csm::EcefCoord& groundPt,
    double desired_precision,
@@ -898,7 +898,7 @@ csm2to3model::computeAllSensorPartials(
 
    CHECK_IMPL;
 
-   std::vector<csm::GeometricModel::SensorPartials> val;
+   std::vector<csm::RasterGM::SensorPartials> val;
    const int numParams = getNumParameters();
    for(int i = 0; i < numParams; ++i)
    {
@@ -920,7 +920,7 @@ csm2to3model::computeAllSensorPartials(
 //*****************************************************************************
 // csm2to3model::computeAllSensorPartials
 //*****************************************************************************
-std::vector<csm::GeometricModel::SensorPartials>
+std::vector<csm::RasterGM::SensorPartials>
 csm2to3model::computeAllSensorPartials(
    const csm::ImageCoord& imagePt,
    const csm::EcefCoord& groundPt,
@@ -932,7 +932,7 @@ csm2to3model::computeAllSensorPartials(
 
    CHECK_IMPL;
 
-   std::vector<csm::GeometricModel::SensorPartials> val;
+   std::vector<csm::RasterGM::SensorPartials> val;
    const int numParams = getNumParameters();
    for(int i = 0; i < numParams; ++i)
    {
