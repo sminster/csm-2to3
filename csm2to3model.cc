@@ -17,8 +17,11 @@
 //
 // SOFTWARE HISTORY:
 //
-//> 30MAR12 956F PTR#?????-IPL  S. Minster
-//               Initial Coding.
+//>
+//     Date          Author   Comment   
+//     -----------   ------   ------- 
+//     30-Mar-2012   SCM      Initial Coding
+//     26-Sep-12     JPK      Ripple class hierarchy change
 //<
 //*****************************************************************************
 
@@ -68,19 +71,6 @@ csm::Version csm2to3model::getVersion() const
 
    // TODO
    return csm::Version(1, 0);
-
-   EXCEPTION_RETHROW_CONVERT;
-}
-
-//*****************************************************************************
-// csm2to3model::getModelType
-//*****************************************************************************
-std::string csm2to3model::getModelType() const
-{
-   EXCEPTION_TRY("csm2to3model::getModelType");
-
-   // TODO
-   return "csm2to3model";
 
    EXCEPTION_RETHROW_CONVERT;
 }
@@ -839,7 +829,7 @@ csm2to3model::computeGroundPartials(const csm::EcefCoord& groundPt)
 //*****************************************************************************
 // csm2to3model::computeSensorPartials
 //*****************************************************************************
-csm::SensorModel::SensorPartials csm2to3model::computeSensorPartials(
+csm::GeometricModel::SensorPartials csm2to3model::computeSensorPartials(
    int index,
    const csm::EcefCoord& groundPt,
    double desired_precision,
@@ -867,7 +857,7 @@ csm::SensorModel::SensorPartials csm2to3model::computeSensorPartials(
 //*****************************************************************************
 // csm2to3model::computeSensorPartials
 //*****************************************************************************
-csm::SensorModel::SensorPartials csm2to3model::computeSensorPartials(
+csm::GeometricModel::SensorPartials csm2to3model::computeSensorPartials(
    int index,
    const csm::ImageCoord& imagePt,
    const csm::EcefCoord& groundPt,
@@ -897,7 +887,7 @@ csm::SensorModel::SensorPartials csm2to3model::computeSensorPartials(
 //*****************************************************************************
 // csm2to3model::computeAllSensorPartials
 //*****************************************************************************
-std::vector<csm::SensorModel::SensorPartials>
+std::vector<csm::GeometricModel::SensorPartials>
 csm2to3model::computeAllSensorPartials(
    const csm::EcefCoord& groundPt,
    double desired_precision,
@@ -908,7 +898,7 @@ csm2to3model::computeAllSensorPartials(
 
    CHECK_IMPL;
 
-   std::vector<csm::SensorModel::SensorPartials> val;
+   std::vector<csm::GeometricModel::SensorPartials> val;
    const int numParams = getNumParameters();
    for(int i = 0; i < numParams; ++i)
    {
@@ -930,7 +920,7 @@ csm2to3model::computeAllSensorPartials(
 //*****************************************************************************
 // csm2to3model::computeAllSensorPartials
 //*****************************************************************************
-std::vector<csm::SensorModel::SensorPartials>
+std::vector<csm::GeometricModel::SensorPartials>
 csm2to3model::computeAllSensorPartials(
    const csm::ImageCoord& imagePt,
    const csm::EcefCoord& groundPt,
@@ -942,7 +932,7 @@ csm2to3model::computeAllSensorPartials(
 
    CHECK_IMPL;
 
-   std::vector<csm::SensorModel::SensorPartials> val;
+   std::vector<csm::GeometricModel::SensorPartials> val;
    const int numParams = getNumParameters();
    for(int i = 0; i < numParams; ++i)
    {
@@ -1103,8 +1093,8 @@ bool csm2to3model::getCurrentGeometricCorrectionSwitch(int index) const
 //*****************************************************************************
 std::vector<double>
 csm2to3model::getCurrentCrossCovarianceMatrix(
-   const csm::SensorModel& comparisonModel,
-   const SensorModelList& otherModels) const
+   const csm::GeometricModel& comparisonModel,
+   const GeometricModelList& otherModels) const
 {
    EXCEPTION_TRY("csm2to3model::getCurrentCrossCovarianceMatrix");
 
@@ -1118,8 +1108,8 @@ csm2to3model::getCurrentCrossCovarianceMatrix(
 //*****************************************************************************
 std::vector<double>
 csm2to3model::getOriginalCrossCovarianceMatrix(
-   const csm::SensorModel& comparisonModel,
-   const SensorModelList& otherModels) const
+   const csm::GeometricModel& comparisonModel,
+   const GeometricModelList& otherModels) const
 {
    EXCEPTION_TRY("csm2to3model::getOriginalCrossCovarianceMatrix");
 

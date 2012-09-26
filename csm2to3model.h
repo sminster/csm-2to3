@@ -16,37 +16,42 @@
 // LIMITATIONS:       None
 //
 // SOFTWARE HISTORY:
-//
-//> 30MAR12 956F PTR#?????-IPL  S. Minster
-//               Initial Coding.
+//>
+//     Date          Author   Comment   
+//     -----------   ------   ------- 
+//     30-Mar-2012   SCM      Initial Coding
+//     26-Sep-12     JPK      Ripple class hierarchy change
 //<
 //*****************************************************************************
 
 #ifndef csm2to3model_HEADER
 #define csm2to3model_HEADER
 
-#include <csm/CSMSensorModel.h>
+#include <csm/CSMRasterGM.h>
 
 class TSMSensorModel;
 
 //*****************************************************************************
 // CLASS:  csm2to3model
-//> This class TODO
-//  
+//> This class implements a CSM version 3 RasterGM interface by calling the
+//  equivalent CSM version 2 TSMSensorModel methods.  It must be constructed
+//  with that TSMSensorModel object
 //<
 //*****************************************************************************
-class csm2to3model : public csm::SensorModel
+class csm2to3model : public csm::RasterGM
 {
 public:
-   csm2to3model(TSMSensorModel* impl);
-      //> This is the default constructor.
+   explicit csm2to3model(TSMSensorModel* impl);
+      //> This constructs the csm2to3model with the given TSMSensorModel
+      //  object.  This object must not be NULL.  The csm2to3model takes
+      //  ownership of the TSMSensorModel object, and will delete it when it is
+      //  destructed.
       //<
    virtual ~csm2to3model();
       //> This is the destructor.
       //<
 
    virtual csm::Version getVersion() const;
-   virtual std::string getModelType() const;
    virtual std::string getModelName() const;
    virtual std::string getPedigree() const;
 
@@ -203,12 +208,12 @@ public:
    virtual bool getCurrentGeometricCorrectionSwitch(int index) const;
 
    virtual std::vector<double> getCurrentCrossCovarianceMatrix(
-                const csm::SensorModel& comparisonModel,
-                const SensorModelList& otherModels = SensorModelList()) const;
+                const csm::GeometricModel& comparisonModel,
+                const GeometricModelList& otherModels = GeometricModelList()) const;
 
    virtual std::vector<double> getOriginalCrossCovarianceMatrix(
-                const csm::SensorModel& comparisonModel,
-                const SensorModelList& otherModels = SensorModelList()) const;
+                const csm::GeometricModel& comparisonModel,
+                const GeometricModelList& otherModels = GeometricModelList()) const;
 
    virtual csm::CovarianceModel* getCovarianceModel() const;
 

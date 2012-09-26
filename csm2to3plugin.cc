@@ -16,9 +16,11 @@
 // LIMITATIONS:       None
 //
 // SOFTWARE HISTORY:
-//
-//> 30MAR12 956F PTR#?????-IPL  S. Minster
-//               Initial Coding.
+//>
+//     Date          Author   Comment   
+//     -----------   ------   ------- 
+//     30-Mar-2012   SCM      Initial Coding
+//     26-Sep-12     JPK      Ripple class hierarchy change
 //<
 //*****************************************************************************
 
@@ -26,7 +28,7 @@
 #include "csm2to3model.h"
 #include "csm2to3-private.h"
 
-#include <csm/CSMSensorModel.h>
+#include <csm/CSMRasterGM.h>
 #include <csm/CSMISDByteStream.h>
 #include <csm/CSMISDNITF.h>
 
@@ -130,7 +132,7 @@ std::string csm2to3plugin::getModelName(size_t index) const
 std::string csm2to3plugin::getModelFamily(size_t index) const
 {
    // always a sensor model
-   return CSM_SENSOR_MODEL_FAMILY;
+   return CSM_RASTER_FAMILY;
 }
 
 //*****************************************************************************
