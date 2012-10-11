@@ -20,7 +20,8 @@
 //     Date          Author   Comment   
 //     -----------   ------   ------- 
 //     30-Mar-2012   SCM      Initial Coding
-//     26-Sep-12     JPK      Ripple class hierarchy change
+//     26-Sep-2012   JPK      Ripple class hierarchy change
+//     11-Oct-2012   SCM      Added getParameterUnits.
 //<
 //*****************************************************************************
 
@@ -140,6 +141,7 @@ public:
    //---
    virtual int getNumParameters() const;
    virtual std::string getParameterName(int index) const;
+   virtual std::string getParameterUnits(int index) const;
    virtual bool isParameterShareable(int index) const;
    virtual std::vector<csm::ParameterSharingCriteria> getParameterSharingCriteria(int index) const;
 

@@ -21,7 +21,8 @@
 //     Date          Author   Comment   
 //     -----------   ------   ------- 
 //     30-Mar-2012   SCM      Initial Coding
-//     26-Sep-12     JPK      Ripple class hierarchy change
+//     26-Sep-2012   JPK      Ripple class hierarchy change
+//     11-Oct-2012   SCM      Added getParameterUnits.
 //<
 //*****************************************************************************
 
@@ -627,6 +628,18 @@ std::string csm2to3model::getParameterName(int index) const
    return val;
 
    EXCEPTION_RETHROW_CONVERT;
+}
+
+//*****************************************************************************
+// csm2to3model::getParameterUnits
+//*****************************************************************************
+std::string csm2to3model::getParameterUnits(int index) const
+{
+   //***
+   // This is not a function on the 2A interface, so return "unitless" as a
+   // default (this is preferable to an empty string).
+   //***
+   return "unitless";
 }
 
 //*****************************************************************************
