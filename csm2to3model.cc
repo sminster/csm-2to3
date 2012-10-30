@@ -23,6 +23,7 @@
 //     30-Mar-2012   SCM      Initial Coding
 //     26-Sep-2012   JPK      Ripple class hierarchy change
 //     11-Oct-2012   SCM      Added getParameterUnits.
+//     30-Oct-2012   SCM      Fixed includes.  Rippled other changes.
 //<
 //*****************************************************************************
 
@@ -31,8 +32,8 @@
 
 #include <tsm/TSMSensorModel.h>
 #include <tsm/CSMFourParameterCorrelationModel.h>
-#include <csm/CSMError.h>
-#include <csm/CSMFourParameterCorrelationModel.h>
+#include <csm/Error.h>
+#include <csm/FourParameterCorrelationModel.h>
 
 #include <sstream>
 
@@ -284,8 +285,8 @@ csm::ImageCoordCovar csm2to3model::groundToImage(
    csm::ImageCoordCovar val(0, 0);
    double tmp;
    SAVE_WARNING(theImpl->groundToImage(groundPt.x, groundPt.y, groundPt.z,
-                                       groundPt.covar(),
-                                       val.line, val.samp, val.covar(),
+                                       groundPt.covariance,
+                                       val.line, val.samp, val.covariance,
                                        achieved_precision ? *achieved_precision : tmp,
                                        desired_precision),
                 warnings);
@@ -337,9 +338,9 @@ csm::EcefCoordCovar csm2to3model::imageToGround(
 
    csm::EcefCoordCovar val(0, 0, 0);
    double tmp;
-   SAVE_WARNING(theImpl->imageToGround(imagePt.line, imagePt.samp, imagePt.covar(),
+   SAVE_WARNING(theImpl->imageToGround(imagePt.line, imagePt.samp, imagePt.covariance,
                                        height, heightVariance,
-                                       val.x, val.y, val.z, val.covar(),
+                                       val.x, val.y, val.z, val.covariance,
                                        achieved_precision ? *achieved_precision : tmp,
                                        desired_precision),
                 warnings);
