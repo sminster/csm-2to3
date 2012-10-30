@@ -22,13 +22,14 @@
 //     30-Mar-2012   SCM      Initial Coding
 //     26-Sep-2012   JPK      Ripple class hierarchy change
 //     11-Oct-2012   SCM      Added getParameterUnits.
+//     30-Oct-2012   SCM      Fixed includes.
 //<
 //*****************************************************************************
 
 #ifndef csm2to3model_HEADER
 #define csm2to3model_HEADER
 
-#include <csm/CSMRasterGM.h>
+#include <csm/RasterGM.h>
 
 class TSMSensorModel;
 

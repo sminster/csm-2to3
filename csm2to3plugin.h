@@ -20,13 +20,14 @@
 //     Date          Author   Comment   
 //     -----------   ------   ------- 
 //     30-Mar-2012   SCM      Initial Coding
+//     30-Oct-2012   SCM      Fixed includes.
 //<
 //*****************************************************************************
 
 #ifndef csm2to3plugin_HEADER
 #define csm2to3plugin_HEADER
 
-#include "csm/CSMPlugin.h"
+#include "csm/Plugin.h"
 
 #include <string>
 #include <vector>

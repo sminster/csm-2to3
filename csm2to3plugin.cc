@@ -21,6 +21,7 @@
 //     -----------   ------   ------- 
 //     30-Mar-2012   SCM      Initial Coding
 //     26-Sep-12     JPK      Ripple class hierarchy change
+//     30-Oct-2012   SCM      Fixed includes.
 //<
 //*****************************************************************************
 
@@ -28,9 +29,9 @@
 #include "csm2to3model.h"
 #include "csm2to3-private.h"
 
-#include <csm/CSMRasterGM.h>
-#include <csm/CSMISDByteStream.h>
-#include <csm/CSMISDNITF.h>
+#include <csm/RasterGM.h>
+#include <csm/BytestreamIsd.h>
+#include <csm/NitfIsd.h>
 
 #include <tsm/TSMPlugin.h>
 #include <tsm/TSMWarning.h>
