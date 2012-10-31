@@ -23,6 +23,7 @@
 //     26-Sep-2012   JPK      Ripple class hierarchy change
 //     11-Oct-2012   SCM      Added getParameterUnits.
 //     30-Oct-2012   SCM      Fixed includes.
+//     31-Oct-2012   SCM      Rippled more interface changes.
 //<
 //*****************************************************************************
 
@@ -67,7 +68,8 @@ public:
    virtual std::string getSensorIdentifier() const;
    virtual std::string getPlatformIdentifier() const;
    virtual std::string getCollectionIdentifier() const;
-   virtual csm::SensorTypeAndMode getSensorTypeAndMode() const;
+   virtual std::string getSensorType() const;
+   virtual std::string getSensorMode() const;
 
    virtual csm::EcefCoord getReferencePoint() const;
    virtual void setReferencePoint(const csm::EcefCoord& groundPt);
@@ -143,6 +145,7 @@ public:
    virtual int getNumParameters() const;
    virtual std::string getParameterName(int index) const;
    virtual std::string getParameterUnits(int index) const;
+   virtual bool hasShareableParameters() const;
    virtual bool isParameterShareable(int index) const;
    virtual std::vector<csm::ParameterSharingCriteria> getParameterSharingCriteria(int index) const;
 
@@ -159,14 +162,14 @@ public:
    //---
    // Uncertainty Propagation
    //---
-   virtual std::vector<double> computeGroundPartials(const csm::EcefCoord& groundPt);
+   virtual std::vector<double> computeGroundPartials(const csm::EcefCoord& groundPt) const;
 
    virtual SensorPartials computeSensorPartials(
                 int index,
                 const csm::EcefCoord& groundPt,
                 double desired_precision = 0.001,
                 double* achieved_precision = NULL,
-                csm::WarningList* warnings = NULL);
+                csm::WarningList* warnings = NULL) const;
 
    virtual SensorPartials computeSensorPartials(
                 int index,
@@ -174,19 +177,19 @@ public:
                 const csm::EcefCoord& groundPt,
                 double desired_precision = 0.001,
                 double* achieved_precision = NULL,
-                csm::WarningList* warnings = NULL);
+                csm::WarningList* warnings = NULL) const;
 
    virtual std::vector<SensorPartials> computeAllSensorPartials(
                 const csm::EcefCoord& groundPt,
                 double desired_precision = 0.001,
                 double* achieved_precision = NULL,
-                csm::WarningList* warnings = NULL);
+                csm::WarningList* warnings = NULL) const;
    virtual std::vector<SensorPartials> computeAllSensorPartials(
                 const csm::ImageCoord& imagePt,
                 const csm::EcefCoord& groundPt,
                 double desired_precision = 0.001,
                 double* achieved_precision = NULL,
-                csm::WarningList* warnings = NULL);
+                csm::WarningList* warnings = NULL) const;
 
    virtual double getCurrentParameterCovariance(int index1,
                                                 int index2) const;

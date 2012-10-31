@@ -24,6 +24,7 @@
 //     26-Sep-2012   JPK      Ripple class hierarchy change
 //     11-Oct-2012   SCM      Added getParameterUnits.
 //     30-Oct-2012   SCM      Fixed includes.  Rippled other changes.
+//     31-Oct-2012   SCM      Rippled more interface changes.
 //<
 //*****************************************************************************
 
@@ -186,14 +187,27 @@ std::string csm2to3model::getCollectionIdentifier() const
 }
 
 //*****************************************************************************
-// csm2to3model::getSensorTypeAndMode
+// csm2to3model::getSensorType
 //*****************************************************************************
-csm::SensorTypeAndMode csm2to3model::getSensorTypeAndMode() const
+std::string csm2to3model::getSensorType() const
 {
-   EXCEPTION_TRY("csm2to3model::getSensorTypeAndMode");
+   EXCEPTION_TRY("csm2to3model::getSensorType");
 
    // TODO -- maybe getPedigree could help here?
-   return csm::SensorTypeAndMode(TYPE_UNK, "");
+   return CSM_SENSOR_TYPE_UNKNOWN;
+
+   EXCEPTION_RETHROW_CONVERT;
+}
+
+//*****************************************************************************
+// csm2to3model::getSensorMode
+//*****************************************************************************
+std::string csm2to3model::getSensorMode() const
+{
+   EXCEPTION_TRY("csm2to3model::getSensorMode");
+
+   // TODO -- maybe getPedigree could help here?
+   return CSM_SENSOR_MODE_UNKNOWN;
 
    EXCEPTION_RETHROW_CONVERT;
 }
@@ -644,6 +658,26 @@ std::string csm2to3model::getParameterUnits(int index) const
 }
 
 //*****************************************************************************
+// csm2to3model::hasShareableParameters
+//*****************************************************************************
+bool csm2to3model::hasShareableParameters() const
+{
+   EXCEPTION_TRY("csm2to3model::isParameterShareable");
+
+   CHECK_IMPL;
+
+   const int numParams = getNumParameters();
+   for(int i = 0; i < numParams; ++i)
+   {
+      if (isParameterShareable(i)) return true;
+   }
+
+   return false;
+
+   EXCEPTION_RETHROW_CONVERT;
+}
+
+//*****************************************************************************
 // csm2to3model::isParameterShareable
 //*****************************************************************************
 bool csm2to3model::isParameterShareable(int index) const
@@ -823,13 +857,12 @@ void csm2to3model::setCurrentParameterType(int index, csm::ParamType pType)
 // csm2to3model::computeGroundPartials
 //*****************************************************************************
 std::vector<double>
-csm2to3model::computeGroundPartials(const csm::EcefCoord& groundPt)
+csm2to3model::computeGroundPartials(const csm::EcefCoord& groundPt) const
 {
    EXCEPTION_TRY("csm2to3model::computeGroundPartials");
 
    CHECK_IMPL;
 
-   double tmp;
    double partials[6] = {0.,0.,0.,0.,0.,0.};
    DROP_WARNING(theImpl->computeGroundPartials(groundPt.x,
                                                groundPt.y,
@@ -848,7 +881,7 @@ csm::RasterGM::SensorPartials csm2to3model::computeSensorPartials(
    const csm::EcefCoord& groundPt,
    double desired_precision,
    double* achieved_precision,
-   csm::WarningList* warnings)
+   csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3model::computeSensorPartials");
 
@@ -877,7 +910,7 @@ csm::RasterGM::SensorPartials csm2to3model::computeSensorPartials(
    const csm::EcefCoord& groundPt,
    double desired_precision,
    double* achieved_precision,
-   csm::WarningList* warnings)
+   csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3model::computeSensorPartials");
 
@@ -906,7 +939,7 @@ csm2to3model::computeAllSensorPartials(
    const csm::EcefCoord& groundPt,
    double desired_precision,
    double* achieved_precision,
-   csm::WarningList* warnings)
+   csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3model::computeAllSensorPartials");
 
@@ -940,7 +973,7 @@ csm2to3model::computeAllSensorPartials(
    const csm::EcefCoord& groundPt,
    double desired_precision,
    double* achieved_precision,
-   csm::WarningList* warnings)
+   csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3model::computeAllSensorPartials");
 
@@ -1112,7 +1145,15 @@ csm2to3model::getCurrentCrossCovarianceMatrix(
 {
    EXCEPTION_TRY("csm2to3model::getCurrentCrossCovarianceMatrix");
 
+   CHECK_IMPL;
+
+   const int thisNumP = getNumParameters();
+   const int compNumP = comparisonModel.getNumParameters();
+   std::vector<double> mat(thisNumP * compNumP, 0.0);
+
    // TODO
+
+   return mat;
 
    EXCEPTION_RETHROW_CONVERT;
 }
@@ -1127,7 +1168,15 @@ csm2to3model::getOriginalCrossCovarianceMatrix(
 {
    EXCEPTION_TRY("csm2to3model::getOriginalCrossCovarianceMatrix");
 
+   CHECK_IMPL;
+
+   const int thisNumP = getNumParameters();
+   const int compNumP = comparisonModel.getNumParameters();
+   std::vector<double> mat(thisNumP * compNumP, 0.0);
+
    // TODO
+
+   return mat;
 
    EXCEPTION_RETHROW_CONVERT;
 }
