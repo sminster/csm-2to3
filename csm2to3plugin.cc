@@ -22,6 +22,7 @@
 //     30-Mar-2012   SCM      Initial Coding
 //     26-Sep-12     JPK      Ripple class hierarchy change
 //     30-Oct-2012   SCM      Fixed includes.
+//     31-Oct-2012   SCM      Fixed warnings.
 //<
 //*****************************************************************************
 
@@ -156,7 +157,8 @@ csm::Version csm2to3plugin::getModelVersion(
    TSMWarning* w =
       it->second->getSensorModelVersion(modelName, version);
    if (w) delete w;
-   else return csm::Version(version, 0);
+
+   return csm::Version(version, 0);
 
    EXCEPTION_RETHROW_CONVERT;
 }
@@ -442,7 +444,7 @@ TSM_NITF_ISD* convertNitfIsd(const csm::NitfIsd& nIsd)
 
    tsm->numDESs = nIsd.fileDESs().size();
    tsm->fileDESs = new des[tsm->numDESs];
-   for(size_t i = 0; i < tsm->numDESs; ++i)
+   for(size_t i = 0; i < (size_t)tsm->numDESs; ++i)
    {
       tsm->fileDESs[i].desShLength = nIsd.fileDESs()[i].subHeader().length();
       tsm->fileDESs[i].desSh = strdup(nIsd.fileDESs()[i].subHeader().c_str());
@@ -452,7 +454,7 @@ TSM_NITF_ISD* convertNitfIsd(const csm::NitfIsd& nIsd)
 
    tsm->numImages = nIsd.images().size();
    tsm->images = new image[tsm->numImages];
-   for(size_t i = 0; i < tsm->numImages; ++i)
+   for(size_t i = 0; i < (size_t)tsm->numImages; ++i)
    {
       tsm->images[i].imageSubHeader = nIsd.images()[i].subHeader();
       convertTres(tsm->images[i].numTREs,
