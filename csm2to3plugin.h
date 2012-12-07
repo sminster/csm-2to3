@@ -55,7 +55,7 @@ public:
    virtual std::string getPluginName() const;
    virtual std::string getManufacturer() const;
    virtual std::string getReleaseDate() const;
-   virtual csm::Version getCSMVersion() const;
+   virtual csm::Version getCsmVersion() const;
 
    virtual size_t getNumModels() const;
    virtual std::string getModelName(size_t index) const;

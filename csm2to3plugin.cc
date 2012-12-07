@@ -88,9 +88,9 @@ std::string csm2to3plugin::getReleaseDate() const
 }
 
 //*****************************************************************************
-// csm2to3plugin::getManufacturer
+// csm2to3plugin::getCsmVersion
 //*****************************************************************************
-csm::Version csm2to3plugin::getCSMVersion() const
+csm::Version csm2to3plugin::getCsmVersion() const
 {
    return CURRENT_CSM_VERSION;
 }
@@ -265,7 +265,17 @@ csm::Model* csm2to3plugin::constructModelFromState(
 
             if (tsmModel != NULL)
             {
-               return new csm2to3model(tsmModel);
+               std::string pluginName;
+               
+               TSMWarning* w2 =
+                  (*it)->getPluginName(pluginName);
+
+               if (w2)
+               {
+                  if (warnings) warnings->push_back(CONVERT_WARNING(w2));
+                  delete w2;
+               }
+               return new csm2to3model(tsmModel,pluginName);
             }
          }
          catch(const TSMError& tsm)
@@ -320,7 +330,17 @@ csm::Model* csm2to3plugin::constructModelFromISD(
                        MODULE);
    }
 
-   return new csm2to3model(tsmModel);
+   std::string pluginName;
+   TSMWarning* w2 =
+      it->second->getPluginName(pluginName);
+   
+   if (w2)
+   {
+      if (warnings) warnings->push_back(CONVERT_WARNING(w2));
+      delete w2;
+   }
+   
+   return new csm2to3model(tsmModel,pluginName);
 
    EXCEPTION_RETHROW_CONVERT;
 }
@@ -440,16 +460,16 @@ TSM_NITF_ISD* convertNitfIsd(const csm::NitfIsd& nIsd)
    TSM_NITF_ISD* tsm = new TSM_NITF_ISD();
    tsm->fileHeader = nIsd.fileHeader();
 
-   convertTres(tsm->numTREs, tsm->fileTREs, nIsd.fileTREs());
+   convertTres(tsm->numTREs, tsm->fileTREs, nIsd.fileTres());
 
-   tsm->numDESs = nIsd.fileDESs().size();
+   tsm->numDESs = nIsd.fileDess().size();
    tsm->fileDESs = new des[tsm->numDESs];
    for(size_t i = 0; i < (size_t)tsm->numDESs; ++i)
    {
-      tsm->fileDESs[i].desShLength = nIsd.fileDESs()[i].subHeader().length();
-      tsm->fileDESs[i].desSh = strdup(nIsd.fileDESs()[i].subHeader().c_str());
-      tsm->fileDESs[i].desDataLength = nIsd.fileDESs()[i].data().length();
-      tsm->fileDESs[i].desData = strdup(nIsd.fileDESs()[i].data().c_str());
+      tsm->fileDESs[i].desShLength = nIsd.fileDess()[i].subHeader().length();
+      tsm->fileDESs[i].desSh = strdup(nIsd.fileDess()[i].subHeader().c_str());
+      tsm->fileDESs[i].desDataLength = nIsd.fileDess()[i].data().length();
+      tsm->fileDESs[i].desData = strdup(nIsd.fileDess()[i].data().c_str());
    }
 
    tsm->numImages = nIsd.images().size();
@@ -459,7 +479,7 @@ TSM_NITF_ISD* convertNitfIsd(const csm::NitfIsd& nIsd)
       tsm->images[i].imageSubHeader = nIsd.images()[i].subHeader();
       convertTres(tsm->images[i].numTREs,
                   tsm->images[i].imageTREs,
-                  nIsd.images()[i].imageTREs());
+                  nIsd.images()[i].imageTres());
    }
 
    return tsm;
