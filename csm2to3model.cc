@@ -25,6 +25,10 @@
 //     11-Oct-2012   SCM      Added getParameterUnits.
 //     30-Oct-2012   SCM      Fixed includes.  Rippled other changes.
 //     31-Oct-2012   SCM      Rippled more interface changes.
+//     27-Nov-2012   JPK      Changed return type for getCovarianceModel()
+//                            and cleaned up some variable names.
+//     29-Nov-2012   JPK      Added support for ParamSet enumeration and
+//                            Parameter and SharingCriteria structures.
 //<
 //*****************************************************************************
 
@@ -32,6 +36,7 @@
 #include "csm2to3-private.h"
 
 #include <tsm/TSMSensorModel.h>
+#include <tsm/TSMPlugin.h>
 #include <tsm/CSMFourParameterCorrelationModel.h>
 #include <csm/Error.h>
 #include <csm/FourParameterCorrelationModel.h>
@@ -50,9 +55,11 @@
 //*****************************************************************************
 // csm2to3model::csm2to3model
 //*****************************************************************************
-csm2to3model::csm2to3model(TSMSensorModel* impl)
+csm2to3model::csm2to3model(TSMSensorModel* impl,const std::string& pluginName)
    :
-      theImpl(impl)
+      theImpl            (impl),
+      thePluginName      (pluginName),
+      theCovarianceModel (NULL)
 {
 }
 
@@ -63,6 +70,12 @@ csm2to3model::~csm2to3model()
 {
    delete theImpl;
    theImpl = NULL;
+   
+   thePluginName = "";
+   
+   delete theCovarianceModel;
+   theCovarianceModel = NULL;
+   
 }
 
 //*****************************************************************************
@@ -259,12 +272,82 @@ std::string csm2to3model::getModelState() const
 }
 
 //*****************************************************************************
+// csm2to3model::replaceModelState
+//*****************************************************************************
+void csm2to3model::replaceModelState(const std::string& argState)
+{
+   EXCEPTION_TRY("csm2to3model::replaceModelState");
+
+   CHECK_IMPL;
+   
+   //***
+   // Since this functionality doesn't exist on the 2.A model, we will
+   // attempt to construct a new model.  If this is successful, the current
+   // model is replaced.  Otherwise the current model is left intact, but
+   // and exception is thrown to indicate the state couldn't be loaded.
+   //***
+   
+   if(argState.empty())
+   {
+       std::ostringstream msg;
+       msg << "Provided state string is empty.  Cannot reload CSM";
+       
+       throw csm::Error(csm::Error::INVALID_SENSOR_MODEL_STATE,
+                        msg.str(),
+                        MODULE);
+   }
+   
+   TSMPlugin* csmPlugin = NULL;
+
+   DROP_WARNING(TSMPlugin::findPlugin(thePluginName,
+                                         csmPlugin));
+      
+   
+   if (csmPlugin)
+   {
+      TSMSensorModel* model = 0;
+      
+      DROP_WARNING(csmPlugin->
+                   constructSensorModelFromState(argState,
+                                                 model));
+
+      if (model)
+      {
+         delete theImpl;
+         theImpl = model;
+         delete theCovarianceModel;
+         theCovarianceModel = 0;
+      }
+      else
+      {
+         std::ostringstream msg;
+         msg << "Could not construct model from provided state.";
+
+         throw csm::Error(csm::Error::SENSOR_MODEL_NOT_CONSTRUCTIBLE,
+                          msg.str(),
+                          MODULE);
+      }
+   }
+   else
+   {
+      std::ostringstream msg;
+      msg << "Could not instantiate plugin for current model!";
+      
+      throw csm::Error(csm::Error::UNKNOWN_ERROR,
+                        msg.str(),
+                       MODULE);
+   }
+   
+   EXCEPTION_RETHROW_CONVERT;
+}
+
+//*****************************************************************************
 // csm2to3model::groundToImage
 //*****************************************************************************
 csm::ImageCoord csm2to3model::groundToImage(
    const csm::EcefCoord& groundPt,
-   double desired_precision,
-   double* achieved_precision,
+   double desiredPrecision,
+   double* achievedPrecision,
    csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3model::groundToImage");
@@ -275,8 +358,8 @@ csm::ImageCoord csm2to3model::groundToImage(
    double tmp;
    SAVE_WARNING(theImpl->groundToImage(groundPt.x, groundPt.y, groundPt.z,
                                        val.line, val.samp,
-                                       achieved_precision ? *achieved_precision : tmp,
-                                       desired_precision),
+                                       achievedPrecision ? *achievedPrecision : tmp,
+                                       desiredPrecision),
                 warnings);
    return val;
 
@@ -288,8 +371,8 @@ csm::ImageCoord csm2to3model::groundToImage(
 //*****************************************************************************
 csm::ImageCoordCovar csm2to3model::groundToImage(
    const csm::EcefCoordCovar& groundPt,
-   double desired_precision,
-   double* achieved_precision,
+   double desiredPrecision,
+   double* achievedPrecision,
    csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3model::groundToImage");
@@ -301,8 +384,8 @@ csm::ImageCoordCovar csm2to3model::groundToImage(
    SAVE_WARNING(theImpl->groundToImage(groundPt.x, groundPt.y, groundPt.z,
                                        groundPt.covariance,
                                        val.line, val.samp, val.covariance,
-                                       achieved_precision ? *achieved_precision : tmp,
-                                       desired_precision),
+                                       achievedPrecision ? *achievedPrecision : tmp,
+                                       desiredPrecision),
                 warnings);
 
    return val;
@@ -316,8 +399,8 @@ csm::ImageCoordCovar csm2to3model::groundToImage(
 csm::EcefCoord csm2to3model::imageToGround(
    const csm::ImageCoord& imagePt,
    double height,
-   double desired_precision,
-   double* achieved_precision,
+   double desiredPrecision,
+   double* achievedPrecision,
    csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3model::imageToGround");
@@ -328,8 +411,8 @@ csm::EcefCoord csm2to3model::imageToGround(
    double tmp;
    SAVE_WARNING(theImpl->imageToGround(imagePt.line, imagePt.samp, height,
                                        val.x, val.y, val.z,
-                                       achieved_precision ? *achieved_precision : tmp,
-                                       desired_precision),
+                                       achievedPrecision ? *achievedPrecision : tmp,
+                                       desiredPrecision),
                 warnings);
    return val;
 
@@ -342,8 +425,8 @@ csm::EcefCoord csm2to3model::imageToGround(
 csm::EcefCoordCovar csm2to3model::imageToGround(
    const csm::ImageCoordCovar& imagePt,
    double height, double heightVariance,
-   double desired_precision,
-   double* achieved_precision,
+   double desiredPrecision,
+   double* achievedPrecision,
    csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3model::imageToGround");
@@ -355,8 +438,8 @@ csm::EcefCoordCovar csm2to3model::imageToGround(
    SAVE_WARNING(theImpl->imageToGround(imagePt.line, imagePt.samp, imagePt.covariance,
                                        height, heightVariance,
                                        val.x, val.y, val.z, val.covariance,
-                                       achieved_precision ? *achieved_precision : tmp,
-                                       desired_precision),
+                                       achievedPrecision ? *achievedPrecision : tmp,
+                                       desiredPrecision),
                 warnings);
 
    return val;
@@ -367,11 +450,11 @@ csm::EcefCoordCovar csm2to3model::imageToGround(
 //*****************************************************************************
 // csm2to3model::imageToProximateImagingLocus
 //*****************************************************************************
-std::vector<double> csm2to3model::imageToProximateImagingLocus(
+csm::EcefLocus csm2to3model::imageToProximateImagingLocus(
    const csm::ImageCoord& imagePt,
    const csm::EcefCoord& groundPt,
-   double desired_precision,
-   double* achieved_precision,
+   double desiredPrecision,
+   double* achievedPrecision,
    csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3model::imageToProximateImagingLocus");
@@ -384,10 +467,12 @@ std::vector<double> csm2to3model::imageToProximateImagingLocus(
                    imagePt.line, imagePt.samp,
                    groundPt.x, groundPt.y, groundPt.z,
                    locus,
-                   achieved_precision ? *achieved_precision : tmp,
-                   desired_precision),
+                   achievedPrecision ? *achievedPrecision : tmp,
+                   desiredPrecision),
                 warnings);
-   return std::vector<double>(locus, locus + 6);
+   
+   return csm::EcefLocus(locus[0],locus[1],locus[2],
+                         locus[3],locus[4],locus[5]);
 
    EXCEPTION_RETHROW_CONVERT;
 }
@@ -395,10 +480,10 @@ std::vector<double> csm2to3model::imageToProximateImagingLocus(
 //*****************************************************************************
 // csm2to3model::imageToRemoteImagingLocus
 //*****************************************************************************
-std::vector<double> csm2to3model::imageToRemoteImagingLocus(
+csm::EcefLocus csm2to3model::imageToRemoteImagingLocus(
    const csm::ImageCoord& imagePt,
-   double desired_precision,
-   double* achieved_precision,
+   double desiredPrecision,
+   double* achievedPrecision,
    csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3model::imageToRemoteImagingLocus");
@@ -410,10 +495,12 @@ std::vector<double> csm2to3model::imageToRemoteImagingLocus(
    SAVE_WARNING(theImpl->imageToRemoteImagingLocus(
                    imagePt.line, imagePt.samp,
                    locus,
-                   achieved_precision ? *achieved_precision : tmp,
-                   desired_precision),
+                   achievedPrecision ? *achievedPrecision : tmp,
+                   desiredPrecision),
                 warnings);
-   return std::vector<double>(locus, locus + 6);
+
+   return csm::EcefLocus(locus[0],locus[1],locus[2],
+                         locus[3],locus[4],locus[5]);
 
    EXCEPTION_RETHROW_CONVERT;
 }
@@ -651,10 +738,10 @@ std::string csm2to3model::getParameterName(int index) const
 std::string csm2to3model::getParameterUnits(int index) const
 {
    //***
-   // This is not a function on the 2A interface, so return "unitless" as a
+   // This is not a function on the 2A interface, so return "unknown" as a
    // default (this is preferable to an empty string).
    //***
-   return "unitless";
+   return "unknown";
 }
 
 //*****************************************************************************
@@ -696,65 +783,37 @@ bool csm2to3model::isParameterShareable(int index) const
 //*****************************************************************************
 // csm2to3model::getParameterSharingCriteria
 //*****************************************************************************
-std::vector<csm::ParameterSharingCriteria>
+csm::SharingCriteria
 csm2to3model::getParameterSharingCriteria(int index) const
 {
    EXCEPTION_TRY("csm2to3model::getParameterSharingCriteria");
 
    CHECK_IMPL;
-
-   bool modelName = false;
-   bool sensorId = false;
-   bool platformId = false;
-   bool collectionId = false;
-   bool trajectoryId = false;
-   bool dateTime = false;
-   double timeDelta = 0.0;
-   DROP_WARNING(theImpl->getParameterSharingCriteria(index,
-                                                     modelName,
-                                                     sensorId,
-                                                     platformId,
-                                                     collectionId,
-                                                     trajectoryId,
-                                                     dateTime,
-                                                     timeDelta));
-
-   std::vector<csm::ParameterSharingCriteria> val;
-   if (modelName) val.push_back(csm::ParameterSharingCriteria(csm::SHARE_BY_MODEL_NAME));
-   if (sensorId) val.push_back(csm::ParameterSharingCriteria(csm::SHARE_BY_SENSOR_ID));
-   if (platformId) val.push_back(csm::ParameterSharingCriteria(csm::SHARE_BY_PLATFORM_ID));
-   if (collectionId) val.push_back(csm::ParameterSharingCriteria(csm::SHARE_BY_COLLECTION_ID));
-   if (trajectoryId) val.push_back(csm::ParameterSharingCriteria(csm::SHARE_BY_TRAJECTORY_ID));
-   if (dateTime) val.push_back(csm::ParameterSharingCriteria(timeDelta));
-
-   return val;
-
+   
+   csm::SharingCriteria criteria;
+  
+   DROP_WARNING(theImpl->
+                getParameterSharingCriteria(index,
+                                            criteria.matchesName,
+                                            criteria.matchesSensorID,
+                                            criteria.matchesPlatformID,
+                                            criteria.matchesCollectionID,
+                                            criteria.matchesTrajectoryID,
+                                            criteria.matchesDateTime,
+                                            criteria.maxTimeDelta));
+   
+   return criteria;
+   
    EXCEPTION_RETHROW_CONVERT;
 }
 
+
 //*****************************************************************************
-// csm2to3model::getOriginalParameterValue
+// csm2to3model::getParameterValue
 //*****************************************************************************
-double csm2to3model::getOriginalParameterValue(int index) const
+double csm2to3model::getParameterValue(int index) const
 {
-   EXCEPTION_TRY("csm2to3model::getOriginalParameterValue");
-
-   CHECK_IMPL;
-
-   double val = 0.;
-   DROP_WARNING(theImpl->getOriginalParameterValue(index, val));
-   return val;
-
-
-   EXCEPTION_RETHROW_CONVERT;
-}
-
-//*****************************************************************************
-// csm2to3model::getCurrentParameterValue
-//*****************************************************************************
-double csm2to3model::getCurrentParameterValue(int index) const
-{
-   EXCEPTION_TRY("csm2to3model::getCurrentParameterValue");
+   EXCEPTION_TRY("csm2to3model::getParameterValue");
 
    CHECK_IMPL;
 
@@ -766,11 +825,11 @@ double csm2to3model::getCurrentParameterValue(int index) const
 }
 
 //*****************************************************************************
-// csm2to3model::setCurrentParameterValue
+// csm2to3model::setParameterValue
 //*****************************************************************************
-void csm2to3model::setCurrentParameterValue(int index, double value)
+void csm2to3model::setParameterValue(int index, double value)
 {
-   EXCEPTION_TRY("csm2to3model::setCurrentParameterValue");
+   EXCEPTION_TRY("csm2to3model::setParameterValue");
 
    CHECK_IMPL;
 
@@ -779,26 +838,13 @@ void csm2to3model::setCurrentParameterValue(int index, double value)
    EXCEPTION_RETHROW_CONVERT;
 }
 
+
 //*****************************************************************************
-// csm2to3model::setOriginalParameterValue
+// csm2to3model::getParameterType
 //*****************************************************************************
-void csm2to3model::setOriginalParameterValue(int index, double value)
+csm::param::Type csm2to3model::getParameterType(int index) const
 {
-   EXCEPTION_TRY("csm2to3model::setOriginalParameterValue");
-
-   CHECK_IMPL;
-
-   DROP_WARNING(theImpl->setOriginalParameterValue(index, value));
-
-   EXCEPTION_RETHROW_CONVERT;
-}
-
-//*****************************************************************************
-// csm2to3model::getOriginalParameterType
-//*****************************************************************************
-csm::ParamType csm2to3model::getOriginalParameterType(int index) const
-{
-   EXCEPTION_TRY("csm2to3model::getOriginalParameterType");
+   EXCEPTION_TRY("csm2to3model::getParameterType");
 
    CHECK_IMPL;
 
@@ -806,49 +852,23 @@ csm::ParamType csm2to3model::getOriginalParameterType(int index) const
    DROP_WARNING(theImpl->getParameterType(index, val));
 
    // enums have the same values, so just cast
-   return (csm::ParamType)val;
+   return (csm::param::Type)val;
 
    EXCEPTION_RETHROW_CONVERT;
 }
 
 //*****************************************************************************
-// csm2to3model::getCurrentParameterType
+// csm2to3model::setParameterType
 //*****************************************************************************
-csm::ParamType csm2to3model::getCurrentParameterType(int index) const
+void csm2to3model::setParameterType(int index, csm::param::Type pType)
 {
-   EXCEPTION_TRY("csm2to3model::getCurrentParameterType");
-
-   // no difference between original and current in TSM model
-   return getOriginalParameterType(index);
-
-   EXCEPTION_RETHROW_CONVERT;
-}
-
-//*****************************************************************************
-// csm2to3model::setOriginalParameterType
-//*****************************************************************************
-void csm2to3model::setOriginalParameterType(int index, csm::ParamType pType)
-{
-   EXCEPTION_TRY("csm2to3model::setOriginalParameterType");
+   EXCEPTION_TRY("csm2to3model::setParameterType");
 
    CHECK_IMPL;
 
    // enums have the same values, so just cast
    TSMMisc::Param_CharType val = (TSMMisc::Param_CharType)pType;
    DROP_WARNING(theImpl->setParameterType(index, val));
-
-   EXCEPTION_RETHROW_CONVERT;
-}
-
-//*****************************************************************************
-// csm2to3model::setCurrentParameterType
-//*****************************************************************************
-void csm2to3model::setCurrentParameterType(int index, csm::ParamType pType)
-{
-   EXCEPTION_TRY("csm2to3model::setCurrentParameterType");
-
-   // no difference between original and current in TSM model
-   return setOriginalParameterType(index, pType);
 
    EXCEPTION_RETHROW_CONVERT;
 }
@@ -879,8 +899,8 @@ csm2to3model::computeGroundPartials(const csm::EcefCoord& groundPt) const
 csm::RasterGM::SensorPartials csm2to3model::computeSensorPartials(
    int index,
    const csm::EcefCoord& groundPt,
-   double desired_precision,
-   double* achieved_precision,
+   double desiredPrecision,
+   double* achievedPrecision,
    csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3model::computeSensorPartials");
@@ -893,8 +913,8 @@ csm::RasterGM::SensorPartials csm2to3model::computeSensorPartials(
                    index,
                    groundPt.x, groundPt.y, groundPt.z,
                    partials.first, partials.second,
-                   achieved_precision ? *achieved_precision : tmp,
-                   desired_precision),
+                   achievedPrecision ? *achievedPrecision : tmp,
+                   desiredPrecision),
                 warnings);
    return partials;
 
@@ -908,8 +928,8 @@ csm::RasterGM::SensorPartials csm2to3model::computeSensorPartials(
    int index,
    const csm::ImageCoord& imagePt,
    const csm::EcefCoord& groundPt,
-   double desired_precision,
-   double* achieved_precision,
+   double desiredPrecision,
+   double* achievedPrecision,
    csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3model::computeSensorPartials");
@@ -923,8 +943,8 @@ csm::RasterGM::SensorPartials csm2to3model::computeSensorPartials(
                    imagePt.line, imagePt.samp,
                    groundPt.x, groundPt.y, groundPt.z,
                    partials.first, partials.second,
-                   achieved_precision ? *achieved_precision : tmp,
-                   desired_precision),
+                   achievedPrecision ? *achievedPrecision : tmp,
+                   desiredPrecision),
                 warnings);
    return partials;
 
@@ -932,79 +952,12 @@ csm::RasterGM::SensorPartials csm2to3model::computeSensorPartials(
 }
 
 //*****************************************************************************
-// csm2to3model::computeAllSensorPartials
+// csm2to3model::getParameterCovariance
 //*****************************************************************************
-std::vector<csm::RasterGM::SensorPartials>
-csm2to3model::computeAllSensorPartials(
-   const csm::EcefCoord& groundPt,
-   double desired_precision,
-   double* achieved_precision,
-   csm::WarningList* warnings) const
-{
-   EXCEPTION_TRY("csm2to3model::computeAllSensorPartials");
-
-   CHECK_IMPL;
-
-   std::vector<csm::RasterGM::SensorPartials> val;
-   const int numParams = getNumParameters();
-   for(int i = 0; i < numParams; ++i)
-   {
-      double prec = 0.0;
-      val.push_back(
-         computeSensorPartials(i, groundPt,
-                               desired_precision, &prec, warnings));
-
-      if (achieved_precision && prec < *achieved_precision)
-      {
-         *achieved_precision = prec;
-      }
-   }
-   return val;
-
-   EXCEPTION_RETHROW_CONVERT;
-}
-
-//*****************************************************************************
-// csm2to3model::computeAllSensorPartials
-//*****************************************************************************
-std::vector<csm::RasterGM::SensorPartials>
-csm2to3model::computeAllSensorPartials(
-   const csm::ImageCoord& imagePt,
-   const csm::EcefCoord& groundPt,
-   double desired_precision,
-   double* achieved_precision,
-   csm::WarningList* warnings) const
-{
-   EXCEPTION_TRY("csm2to3model::computeAllSensorPartials");
-
-   CHECK_IMPL;
-
-   std::vector<csm::RasterGM::SensorPartials> val;
-   const int numParams = getNumParameters();
-   for(int i = 0; i < numParams; ++i)
-   {
-      double prec = 0.0;
-      val.push_back(
-         computeSensorPartials(i, imagePt, groundPt,
-                               desired_precision, &prec, warnings));
-
-      if (achieved_precision && prec < *achieved_precision)
-      {
-         *achieved_precision = prec;
-      }
-   }
-   return val;
-
-   EXCEPTION_RETHROW_CONVERT;
-}
-
-//*****************************************************************************
-// csm2to3model::getCurrentParameterCovariance
-//*****************************************************************************
-double csm2to3model::getCurrentParameterCovariance(int index1,
+double csm2to3model::getParameterCovariance(int index1,
                                                    int index2) const
 {
-   EXCEPTION_TRY("csm2to3model::getCurrentParameterCovariance");
+   EXCEPTION_TRY("csm2to3model::getParameterCovariance");
 
    CHECK_IMPL;
 
@@ -1016,52 +969,18 @@ double csm2to3model::getCurrentParameterCovariance(int index1,
 }
 
 //*****************************************************************************
-// csm2to3model::setCurrentParameterCovariance
+// csm2to3model::setParameterCovariance
 //*****************************************************************************
-void csm2to3model::setCurrentParameterCovariance(int index1,
+void csm2to3model::setParameterCovariance(int index1,
                                                  int index2,
                                                  double covariance)
 {
-   EXCEPTION_TRY("csm2to3model::setCurrentParameterCovariance");
+   EXCEPTION_TRY("csm2to3model::setParameterCovariance");
 
    CHECK_IMPL;
 
    DROP_WARNING(theImpl->setCurrentParameterCovariance(index1, index2,
                                                        covariance));
-
-   EXCEPTION_RETHROW_CONVERT;
-}
-
-//*****************************************************************************
-// csm2to3model::getOriginalParameterCovariance
-//*****************************************************************************
-double csm2to3model::getOriginalParameterCovariance(int index1,
-                                                    int index2) const
-{
-   EXCEPTION_TRY("csm2to3model::getOriginalParameterCovariance");
-
-   CHECK_IMPL;
-
-   double val;
-   DROP_WARNING(theImpl->getOriginalParameterCovariance(index1, index2, val));
-   return val;
-
-   EXCEPTION_RETHROW_CONVERT;
-}
-
-//*****************************************************************************
-// csm2to3model::setOriginalParameterCovariance
-//*****************************************************************************
-void csm2to3model::setOriginalParameterCovariance(int index1,
-                                                  int index2,
-                                                  double covariance)
-{
-   EXCEPTION_TRY("csm2to3model::setOriginalParameterCovariance");
-
-   CHECK_IMPL;
-
-   DROP_WARNING(theImpl->setOriginalParameterCovariance(index1, index2,
-                                                        covariance));
 
    EXCEPTION_RETHROW_CONVERT;
 }
@@ -1099,13 +1018,13 @@ std::string csm2to3model::getGeometricCorrectionName(int index) const
 }
 
 //*****************************************************************************
-// csm2to3model::setCurrentGeometricCorrectionSwitch
+// csm2to3model::setGeometricCorrectionSwitch
 //*****************************************************************************
-void csm2to3model::setCurrentGeometricCorrectionSwitch(int index,
-                                                       bool value,
-                                                       csm::ParamType pType)
+void csm2to3model::setGeometricCorrectionSwitch(int index,
+                                                bool value,
+                                                csm::param::Type pType)
 {
-   EXCEPTION_TRY("csm2to3model::setCurrentGeometricCorrectionSwitch");
+   EXCEPTION_TRY("csm2to3model::setGeometricCorrectionSwitch");
 
    CHECK_IMPL;
 
@@ -1120,11 +1039,11 @@ void csm2to3model::setCurrentGeometricCorrectionSwitch(int index,
 }
 
 //*****************************************************************************
-// csm2to3model::getCurrentGeometricCorrectionSwitch
+// csm2to3model::getGeometricCorrectionSwitch
 //*****************************************************************************
-bool csm2to3model::getCurrentGeometricCorrectionSwitch(int index) const
+bool csm2to3model::getGeometricCorrectionSwitch(int index) const
 {
-   EXCEPTION_TRY("csm2to3model::getCurrentGeometricCorrectionSwitch");
+   EXCEPTION_TRY("csm2to3model::getGeometricCorrectionSwitch");
 
    CHECK_IMPL;
 
@@ -1136,43 +1055,26 @@ bool csm2to3model::getCurrentGeometricCorrectionSwitch(int index) const
 }
 
 //*****************************************************************************
-// csm2to3model::getCurrentCrossCovarianceMatrix
+// csm2to3model::getCrossCovarianceMatrix
 //*****************************************************************************
 std::vector<double>
-csm2to3model::getCurrentCrossCovarianceMatrix(
+csm2to3model::getCrossCovarianceMatrix(
    const csm::GeometricModel& comparisonModel,
+   csm::param::Set pSet,
    const GeometricModelList& otherModels) const
 {
-   EXCEPTION_TRY("csm2to3model::getCurrentCrossCovarianceMatrix");
+   EXCEPTION_TRY("csm2to3model::getCrossCovarianceMatrix");
 
    CHECK_IMPL;
-
-   const int thisNumP = getNumParameters();
-   const int compNumP = comparisonModel.getNumParameters();
-   std::vector<double> mat(thisNumP * compNumP, 0.0);
-
-   // TODO
-
-   return mat;
-
-   EXCEPTION_RETHROW_CONVERT;
-}
-
-//*****************************************************************************
-// csm2to3model::getOriginalCrossCovarianceMatrix
-//*****************************************************************************
-std::vector<double>
-csm2to3model::getOriginalCrossCovarianceMatrix(
-   const csm::GeometricModel& comparisonModel,
-   const GeometricModelList& otherModels) const
-{
-   EXCEPTION_TRY("csm2to3model::getOriginalCrossCovarianceMatrix");
-
-   CHECK_IMPL;
-
-   const int thisNumP = getNumParameters();
-   const int compNumP = comparisonModel.getNumParameters();
-   std::vector<double> mat(thisNumP * compNumP, 0.0);
+   
+   const std::vector<int> indicesForThis = getParameterSetIndices(pSet);
+   const std::vector<int> indicesForComp = comparisonModel.
+                                           getParameterSetIndices(pSet);
+   
+   
+   std::vector<double> mat(indicesForThis.size() *
+                           indicesForComp.size(),
+                           0.0);
 
    // TODO
 
@@ -1217,58 +1119,74 @@ private:
 //*****************************************************************************
 // csm2to3model::getCovarianceModel
 //*****************************************************************************
-csm::CovarianceModel* csm2to3model::getCovarianceModel() const
+const csm::CovarianceModel& csm2to3model::getCovarianceModel() const
 {
    EXCEPTION_TRY("csm2to3model::getCovarianceModel");
+   
+   if (!theCovarianceModel)
+   { 
+      CHECK_IMPL;
 
-   CHECK_IMPL;
-
-   // use an auto_ptr to store the TSM model so that it will be deleted
-   std::auto_ptr<tsm_CovarianceModel> tsmModel;
-   {
-      tsm_CovarianceModel* tmp;
-      DROP_WARNING(theImpl->getCovarianceModel(tmp));
-      if (!tmp) return NULL;
-      tsmModel.reset(tmp);
-   }
-
-   // see if this is a 4 param model we can convert to the CSM version
-   CSMFourParameterCorrelationModel* tsmFourParamModel =
-      dynamic_cast<CSMFourParameterCorrelationModel*>(tsmModel.get());
-   if (tsmFourParamModel != NULL)
-   {
-      int numSm = 0;
-      int numCp = 0;
-      DROP_WARNING(tsmFourParamModel->getNumSensorModelParameters(numSm));
-      DROP_WARNING(tsmFourParamModel->getNumCorrelationParameterGroups(numCp));
-
-      csm::FourParameterCorrelationModel* csmModel =
-         new csm::FourParameterCorrelationModel(numSm, numCp);
-
-      for(int i = 0; i < numSm; ++i)
+      bool hasCovarianceModel = true;
+      
+      // use an auto_ptr to store the TSM model so that it will be deleted
+      std::auto_ptr<tsm_CovarianceModel> tsmModel;
       {
-         int index = 0;
-         DROP_WARNING(tsmFourParamModel->getCorrelationParameterGroup(i, index));
-         csmModel->setCorrelationParameterGroup(i, index);
+         tsm_CovarianceModel* tmp;
+         DROP_WARNING(theImpl->getCovarianceModel(tmp));
+         if (!tmp) hasCovarianceModel = false;
+         
+         tsmModel.reset(tmp);
       }
 
-      //***
-      // Use the TransferFourParams class to access the protected members and
-      // copy data to the CSM covar model.
-      //***
-      ((TransferFourParams*)tsmFourParamModel)->transferParams(csmModel);
-
-      return csmModel;
+      if (hasCovarianceModel)
+      {
+         // see if this is a 4 param model we can convert to the CSM version
+         CSMFourParameterCorrelationModel* tsmFourParamModel =
+            dynamic_cast<CSMFourParameterCorrelationModel*>(tsmModel.get());
+         if (tsmFourParamModel != NULL)
+         {
+            int numSm = 0;
+            int numCp = 0;
+            DROP_WARNING(tsmFourParamModel->getNumSensorModelParameters(numSm));
+            DROP_WARNING(tsmFourParamModel->getNumCorrelationParameterGroups(numCp));
+            
+            csm::FourParameterCorrelationModel* csmModel =
+               new csm::FourParameterCorrelationModel(numSm, numCp);
+            
+            for(int i = 0; i < numSm; ++i)
+            {
+               int index = 0;
+               DROP_WARNING(tsmFourParamModel->getCorrelationParameterGroup(i, index));
+               csmModel->setCorrelationParameterGroup(i, index);
+            }
+            
+            //***
+            // Use the TransferFourParams class to access the protected members and
+            // copy data to the CSM covar model.
+            //***
+            ((TransferFourParams*)tsmFourParamModel)->transferParams(csmModel);
+            
+            csm2to3model* nonConstThis = const_cast<csm2to3model*>(this); 
+            nonConstThis->theCovarianceModel = csmModel;
+         }
+         else
+         {
+            std::string format;
+            tsmModel->getFormat(format);
+            std::ostringstream msg;
+            msg << "Unsupported TSM covaraince model: \"" << format
+                << "\".  Cannot convert to CSM.";
+            throw csm::Error(csm::Error::UNSUPPORTED_FUNCTION, msg.str(), MODULE);
+         }
+      }
+      else
+      {
+         csm2to3model* nonConstThis = const_cast<csm2to3model*>(this);
+         nonConstThis->theCovarianceModel = new csm::NoCovarianceModel();
+      }
    }
-   else
-   {
-      std::string format;
-      tsmModel->getFormat(format);
-      std::ostringstream msg;
-      msg << "Unsupported TSM covaraince model: \"" << format
-          << "\".  Cannot convert to CSM.";
-      throw csm::Error(csm::Error::UNSUPPORTED_FUNCTION, msg.str(), MODULE);
-   }
+   return (*theCovarianceModel);
 
    EXCEPTION_RETHROW_CONVERT;
 }
