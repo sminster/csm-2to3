@@ -3,7 +3,7 @@ HEADERS=csm2to3plugin.h csm2to3model.h
 
 OBJS=csm2to3plugin.o csm2to3model.o
 
-CSMHOME=/programs/origin/users/sminster/csm-reform
+CSMHOME=../csm3
 TSMHOME=/programs/ipl/gots/csm/tsm-2A
 
 INCLUDES=-I$(CSMHOME)/$(ARCH)/include -I$(TSMHOME)/$(ARCH)/include
