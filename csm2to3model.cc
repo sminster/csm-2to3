@@ -29,6 +29,7 @@
 //                            and cleaned up some variable names.
 //     29-Nov-2012   JPK      Added support for ParamSet enumeration and
 //                            Parameter and SharingCriteria structures.
+//     12-Feb-2013   JPK      Renamed CovarianceModel to CorrelationModel
 //<
 //*****************************************************************************
 
@@ -59,7 +60,7 @@ csm2to3model::csm2to3model(TSMSensorModel* impl,const std::string& pluginName)
    :
       theImpl            (impl),
       thePluginName      (pluginName),
-      theCovarianceModel (NULL)
+      theCorrelationModel (NULL)
 {
 }
 
@@ -73,8 +74,8 @@ csm2to3model::~csm2to3model()
    
    thePluginName = "";
    
-   delete theCovarianceModel;
-   theCovarianceModel = NULL;
+   delete theCorrelationModel;
+   theCorrelationModel = NULL;
    
 }
 
@@ -315,8 +316,8 @@ void csm2to3model::replaceModelState(const std::string& argState)
       {
          delete theImpl;
          theImpl = model;
-         delete theCovarianceModel;
-         theCovarianceModel = 0;
+         delete theCorrelationModel;
+         theCorrelationModel = 0;
       }
       else
       {
@@ -1117,29 +1118,29 @@ private:
 };
 
 //*****************************************************************************
-// csm2to3model::getCovarianceModel
+// csm2to3model::getCorrelationModel
 //*****************************************************************************
-const csm::CovarianceModel& csm2to3model::getCovarianceModel() const
+const csm::CorrelationModel& csm2to3model::getCorrelationModel() const
 {
-   EXCEPTION_TRY("csm2to3model::getCovarianceModel");
+   EXCEPTION_TRY("csm2to3model::getCorrelationModel");
    
-   if (!theCovarianceModel)
+   if (!theCorrelationModel)
    { 
       CHECK_IMPL;
 
-      bool hasCovarianceModel = true;
+      bool hasCorrelationModel = true;
       
       // use an auto_ptr to store the TSM model so that it will be deleted
       std::auto_ptr<tsm_CovarianceModel> tsmModel;
       {
          tsm_CovarianceModel* tmp;
          DROP_WARNING(theImpl->getCovarianceModel(tmp));
-         if (!tmp) hasCovarianceModel = false;
+         if (!tmp) hasCorrelationModel = false;
          
          tsmModel.reset(tmp);
       }
 
-      if (hasCovarianceModel)
+      if (hasCorrelationModel)
       {
          // see if this is a 4 param model we can convert to the CSM version
          CSMFourParameterCorrelationModel* tsmFourParamModel =
@@ -1168,7 +1169,7 @@ const csm::CovarianceModel& csm2to3model::getCovarianceModel() const
             ((TransferFourParams*)tsmFourParamModel)->transferParams(csmModel);
             
             csm2to3model* nonConstThis = const_cast<csm2to3model*>(this); 
-            nonConstThis->theCovarianceModel = csmModel;
+            nonConstThis->theCorrelationModel = csmModel;
          }
          else
          {
@@ -1183,10 +1184,10 @@ const csm::CovarianceModel& csm2to3model::getCovarianceModel() const
       else
       {
          csm2to3model* nonConstThis = const_cast<csm2to3model*>(this);
-         nonConstThis->theCovarianceModel = new csm::NoCovarianceModel();
+         nonConstThis->theCorrelationModel = new csm::NoCorrelationModel();
       }
    }
-   return (*theCovarianceModel);
+   return (*theCorrelationModel);
 
    EXCEPTION_RETHROW_CONVERT;
 }
