@@ -3,7 +3,7 @@ HEADERS=csm2to3plugin.h csm2to3model.h
 
 OBJS=csm2to3plugin.o csm2to3model.o
 
-CSMHOME=../csm3
+CSMHOME=/programs/ipl/gots/csm/csm3
 TSMHOME=/programs/ipl/gots/csm/tsm-2A
 
 INCLUDES=-I$(CSMHOME)/$(ARCH)/include -I$(TSMHOME)/$(ARCH)/include
@@ -17,7 +17,7 @@ LIBVERSION=1.0
 LIBRARY=$(LIBNAME).so.$(LIBVERSION)
 LIBS=$(LINK_LIB_CSM) $(LINK_LIB_TSM) -lm -ldl
 
-INSTDIR=$(PWD)/linux64
+INSTDIR=$(PWD)/$(ARCH)
 
 MKDIR=mkdir
 CP=cp -f
