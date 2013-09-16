@@ -98,7 +98,7 @@ public:
       const std::string& modelName,
       csm::WarningList* warnings = NULL) const;
    
-   static void loadTsmPlugins();
+   static void establishCsmPlugins();
    
 private:
    static std::vector<csm2to3plugin*> INSTANCES;

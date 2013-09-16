@@ -98,28 +98,31 @@ csm::Version csm2to3model::getVersion() const
       int ver = 100;
       
       DROP_WARNING(csmPlugin->getSensorModelVersion(modelName,ver));
-      
-      //***
-      // For Version 2.A and earlier CSMs, the convention for versioning
-      // was to store the integer version as a 3 digit number, where the
-      // digits represent the major,minor, and revision components of the
-      // version respectively.  Some CSMs may not use this convention and
-      // may use less than 3 digits.  In this case we will just use the
-      // entire value as the major component of the version.
-      if (ver >= 100)
-      {
-         int revision = ver % 10;
-         int minor    = (ver / 10) % 10;
-         int major    = ver / 100;
 
-        version = csm::Version(major,minor,revision);
-      }
-      else
+      if (ver > 0)
       {
-         version = csm::Version(ver,0,0);
+         //***
+         // For Version 2.A and earlier CSMs, the convention for versioning
+         // was to store the integer version as a 3 digit number, where the
+         // digits represent the major,minor, and revision components of the
+         // version respectively.  Some CSMs may not use this convention and
+         // may use less than 3 digits.  In this case we will just use the
+         // entire value as the major component of the version.
+         if (ver >= 100)
+         {
+            int revision = ver % 10;
+            int minor    = (ver / 10) % 10;
+            int major    = ver / 100;
+            
+            version = csm::Version(major,minor,revision);
+         }
+         else
+         {
+            version = csm::Version(ver,0,0);
+         }
       }
    }
-
+   
    return version;
    
    EXCEPTION_RETHROW_CONVERT;

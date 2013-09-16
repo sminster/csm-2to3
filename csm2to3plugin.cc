@@ -192,11 +192,37 @@ csm::Version csm2to3plugin::getModelVersion(
 {
    EXCEPTION_TRY("csm2to3plugin::getModelVersion");
 
-   int version = 0;
-   DROP_WARNING(theTsmPlugin->getSensorModelVersion(modelName, version));
-   
-   return csm::Version(version, 0);
+   csm::Version version(1,0,0);
 
+   int ver = 100;
+   DROP_WARNING(theTsmPlugin->getSensorModelVersion(modelName, ver));
+
+   if (ver > 0)
+   {
+      //***
+      // For Version 2.A and earlier CSMs, the convention for versioning
+      // was to store the integer version as a 3 digit number, where the
+      // digits represent the major,minor, and revision components of the
+      // version respectively.  Some CSMs may not use this convention and
+      // may use less than 3 digits.  In this case we will just use the
+      // entire value as the major component of the version.
+      //***
+      if (ver >= 100)
+      {
+         int revision = ver % 10;
+         int minor    = (ver / 10) % 10;
+         int major    = ver / 100;
+         
+         version = csm::Version(major,minor,revision);
+      }
+      else
+      {
+         version = csm::Version(ver,0,0);
+      }
+   }
+   
+   return version;
+  
    EXCEPTION_RETHROW_CONVERT;
 }
 
@@ -510,11 +536,11 @@ tsm_ISD* csm2to3plugin::convertIsd(const csm::Isd& isd)
 }
 
 //*****************************************************************************
-// csm2to3plugin::loadTsmPlugins
+// csm2to3plugin::establishCsmPlugins
 //*****************************************************************************
-void csm2to3plugin::loadTsmPlugins()
+void csm2to3plugin::establishCsmPlugins()
 {
-   EXCEPTION_TRY("csm2to3plugin::loadTsmPlugins");
+   EXCEPTION_TRY("csm2to3plugin::establishCsmPlugins");
    
    TSMPlugin::TSMPluginList* plugins = NULL;
    
