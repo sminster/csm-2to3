@@ -1,6 +1,5 @@
-This is a plugin for the Community Sensor Model, version 3.0.  See https://github.com/sminster/csm.
-
-This project is not complete, and only shows how such a plugin could be made.  Things that are not done are lised in the TODO section.
+This code provides an example mechanism for exploiting CSM 2.A plugins and sensor models using CSM3.0.1 
+See https://github.com/sminster/csm.
 
 Authors
 -------
@@ -8,11 +7,11 @@ This code was primarily written by Scott Minster and John Karp of Harris Corpora
 
 Compiling
 ---------
-This plugin library can theoretically be compiled on Linux i386, x86_64, or IA-64, Solaris Sparc (32 or 64 bit, with or without the "stlport" mode) and x86, and Windows by using the appropriate Makefile when building.  However, it has only been tested on Linux x86_64 on RHEL5:
+This library can theoretically be compiled on Linux i386, x86_64, or IA-64, Solaris Sparc (32 or 64 bit, with or without the "stlport" mode) and x86, and Windows by using the appropriate Makefile when building.  Rudmentary testing has been performed to verify successful compilation on these platforms
 
-   make -f Makefile.linux64 all install clean
+Ex.    make -f Makefile.linux64 all install clean  will build a Linux x86_64 binary
 
-The build requires the CSM3 and TSM 2A library and include files.  These can be set in the Makefile, or set on the command line:
+The build requires the CSM3 and TSM2A library and include files.  These can be set in the Makefile, or set on the command line:
 
   make -f Makefile.linux64 all install clean CSMHOME=/path/to/csm3 TSMHOME=/path/to/tsm2a
 
@@ -26,14 +25,9 @@ TODO
 ----
 * Come up with better way to locate CSM and TSM libraries.  Maybe autoconf?
 
-* csm2to3plugin::loadTsmPlugins() is not implemented, so the library doesn't load any TSM-2A plugin libraries.  There are complications doing this, such as determining where to find those library files and setting the appropriate environment variables.  If the 2A plugins are already loaded, then this plugin should detect them and translate them to the CSM3 interface.
+* There are complications associated with sucessfully loading the TSM Plugins which this code "wraps", such as determining where to find those library files and setting the appropriate environment variables.  If the 2A plugins are already loaded, then this plugin should detect them and translate them to the CSM3 interface.
 
 * csm2to3model::getCrossCovarianceMatrix() is not fully implemented.
 
-* Several informational methods in csm2to3model are default implemented:
-  - getVersion()
-  - getModelName()
-  - getSensorType()
-  - getSensorMode()
 
 
