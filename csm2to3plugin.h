@@ -21,13 +21,20 @@
 //     -----------   ------   ------- 
 //     30-Mar-2012   SCM      Initial Coding
 //     30-Oct-2012   SCM      Fixed includes.
+//     12-Sep-2013   JPK      Updated class to construct from a
+//                            TSMPlugin* . Made constructor private
+//                            Made loadTsmPlugins() static.  Changed
+//                            static data meber INSTANCE (csm2to3plugin*) to
+//                            INSTANCES ( vector<csm2to3plugin*>).  Now an
+//                            instance of this plugin is generated for each
+//                            loaded TSMPlugin.
 //<
 //*****************************************************************************
 
 #ifndef csm2to3plugin_HEADER
 #define csm2to3plugin_HEADER
 
-#include "csm/Plugin.h"
+#include <csm/Plugin.h>
 
 #include <string>
 #include <vector>
@@ -45,9 +52,7 @@ class tsm_ISD;
 class csm2to3plugin : public csm::Plugin
 {
 public:
-   csm2to3plugin();
-      //> This is the default constructor.
-      //<
+
    virtual ~csm2to3plugin();
       //> This is the destructor.
       //<
@@ -92,21 +97,22 @@ public:
       const csm::Isd& imageSupportData,
       const std::string& modelName,
       csm::WarningList* warnings = NULL) const;
-
+   
+   static void establishCsmPlugins();
+      //> This method allows the "wrapping" of
+      //  TSM plugins with instances of the
+      //  csm2to3plugin
+      //<
 private:
-   static csm2to3plugin INSTANCE;
+   static std::vector<csm2to3plugin*> INSTANCES;
 
    static tsm_ISD* convertIsd(const csm::Isd& isd);
 
-   void loadTsmPlugins();
-   void loadNameMap();
-
-   typedef std::vector<std::string> SensorNameList;
-   typedef std::map<std::string, const TSMPlugin*> SensorNameMap;
-
-   SensorNameList theOrderedNames;
-   SensorNameMap  theNameMap;
+   csm2to3plugin(const TSMPlugin*);
+      //> This is the default constructor.
+      //<
+   
+   const TSMPlugin* theTsmPlugin;
 };
-
 
 #endif

@@ -22,7 +22,8 @@
 //                            cleaned up variable names.
 //     29-Nov-2012   JPK      Added support for ParamSet enumeration and
 //                            Parameter and SharingCriteria structures.
-//     06-Dec-2102   JPK      Rippled various name / scoping changes.
+//     06-Dec-2012   JPK      Rippled various name / scoping changes.
+//     12-Feb-2013   JPK      Renamed CovarianceModel to CorrelationModel
 //<
 //*****************************************************************************
 
@@ -30,7 +31,7 @@
 #define csm2to3model_HEADER
 
 #include <csm/RasterGM.h>
-#include <csm/CovarianceModel.h>
+#include <csm/CorrelationModel.h>
 class TSMSensorModel;
 
 //*****************************************************************************
@@ -205,7 +206,7 @@ public:
                 csm::param::Set pSet = csm::param::VALID,
                 const GeometricModelList& otherModels = GeometricModelList()) const;
 
-   virtual const csm::CovarianceModel& getCovarianceModel() const;
+   virtual const csm::CorrelationModel& getCorrelationModel() const;
 
    virtual std::vector<double> getUnmodeledCrossCovariance(
                 const csm::ImageCoord& pt1,
@@ -217,7 +218,7 @@ private:
       //> This data member is used when attempting to reload the state
       //  of a model.  Only look for the plugin whose name matches this name.
       //<
-   csm::CovarianceModel* theCovarianceModel;
+   csm::CorrelationModel* theCorrelationModel;
 };
 
 #endif

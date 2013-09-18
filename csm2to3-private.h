@@ -18,9 +18,12 @@
 // LIMITATIONS:       None
 //
 // SOFTWARE HISTORY:
-//
-//> 30MAR12 956F PTR#?????-IPL  S. Minster
-//               Initial Coding.
+//>
+//     Date          Author   Comment
+//     -----------   ------   -------
+//    30-Mar-2012    SCM      Initial Coding.
+//    12-Sep-2013    JPK      Moved DROP_WARNING and SAVE_WARNING here from
+//                            csm2to3model.cc
 //<
 //*****************************************************************************
 
@@ -42,5 +45,11 @@
 #define CONVERT_WARNING(w) \
    csm::Warning((csm::Warning::WarningType)((w)->getWarning()), \
                 (w)->getMessage(), (w)->getFunction())
+
+#define DROP_WARNING(expr) \
+   do { TSMWarning* w = expr; if (w) delete w; } while (0)
+
+#define SAVE_WARNING(expr,warnings) \
+   do { TSMWarning* w = expr; if (w) { if (warnings) warnings->push_back(CONVERT_WARNING(w)); delete w; } } while (0)
 
 #endif
