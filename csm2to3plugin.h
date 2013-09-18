@@ -99,7 +99,10 @@ public:
       csm::WarningList* warnings = NULL) const;
    
    static void establishCsmPlugins();
-   
+      //> This method allows the "wrapping" of
+      //  TSM plugins with instances of the
+      //  csm2to3plugin
+      //<
 private:
    static std::vector<csm2to3plugin*> INSTANCES;
 
