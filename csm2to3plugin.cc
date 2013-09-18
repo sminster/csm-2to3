@@ -23,6 +23,13 @@
 //     26-Sep-12     JPK      Ripple class hierarchy change
 //     30-Oct-2012   SCM      Fixed includes.
 //     31-Oct-2012   SCM      Fixed warnings.
+//     12-Sep-2013   JPK      Updated class to construct from a
+//                            TSMPlugin* . Made constructor private
+//                            Made loadTsmPlugins() static.  Changed
+//                            static data meber INSTANCE (csm2to3plugin*) to
+//                            INSTANCES ( vector<csm2to3plugin*>).  Now an
+//                            instance of this plugin is generated for each
+//                            loaded TSMPlugin.
 //<
 //*****************************************************************************
 
@@ -42,19 +49,18 @@
 #include <tsm/TSMISDNITF21.h>
 
 #include <sstream>
+#include <vector>
 
-csm2to3plugin csm2to3plugin::INSTANCE;
+std::vector<csm2to3plugin*> csm2to3plugin::INSTANCES;
 
 //*****************************************************************************
 // csm2to3plugin::csm2to3plugin
 //*****************************************************************************
-csm2to3plugin::csm2to3plugin()
+csm2to3plugin::csm2to3plugin(const TSMPlugin* plugin)
    :
-      theOrderedNames(),
-      theNameMap()
-{
-   loadTsmPlugins();
-}
+      csm::Plugin  (),
+      theTsmPlugin (plugin)
+{}
 
 //*****************************************************************************
 // csm2to3plugin::~csm2to3plugin
@@ -68,7 +74,15 @@ csm2to3plugin::~csm2to3plugin()
 //*****************************************************************************
 std::string csm2to3plugin::getPluginName() const
 {
-   return "CSM 2-to-3";
+   EXCEPTION_TRY("csm2to3plugin::getPluginName");
+   
+   std::string pluginName = "unknown";
+
+   DROP_WARNING(theTsmPlugin->getPluginName(pluginName));
+    
+   return pluginName;
+
+   EXCEPTION_RETHROW_CONVERT;
 }
 
 //*****************************************************************************
@@ -76,7 +90,15 @@ std::string csm2to3plugin::getPluginName() const
 //*****************************************************************************
 std::string csm2to3plugin::getManufacturer() const
 {
-   return "Harris";
+   EXCEPTION_TRY("csm2to3plugin::getManufacturer");
+   
+   std::string manufacturer = "unknown";
+   
+   DROP_WARNING(theTsmPlugin->getManufacturer(manufacturer));
+    
+   return manufacturer;
+
+   EXCEPTION_RETHROW_CONVERT;
 }
 
 //*****************************************************************************
@@ -84,7 +106,15 @@ std::string csm2to3plugin::getManufacturer() const
 //*****************************************************************************
 std::string csm2to3plugin::getReleaseDate() const
 {
-   return "2012-04-01";                 // April Fools!
+   EXCEPTION_TRY("csm2to3plugin::getReleaseDate");
+   
+   std::string releaseDate = "2012-04-01"; // April Fools!
+
+   DROP_WARNING(theTsmPlugin->getReleaseDate(releaseDate));
+   
+   return releaseDate;
+
+   EXCEPTION_RETHROW_CONVERT;
 }
 
 //*****************************************************************************
@@ -100,7 +130,15 @@ csm::Version csm2to3plugin::getCsmVersion() const
 //*****************************************************************************
 size_t csm2to3plugin::getNumModels() const
 {
-   return theOrderedNames.size();
+   EXCEPTION_TRY("csm2to3plugin::getNumModels");
+   
+   int numModels = 0;
+   
+   DROP_WARNING(theTsmPlugin->getNSensorModels(numModels));
+   
+   return numModels;
+
+   EXCEPTION_RETHROW_CONVERT;
 }
 
 //*****************************************************************************
@@ -108,7 +146,7 @@ size_t csm2to3plugin::getNumModels() const
 //*****************************************************************************
 std::string csm2to3plugin::getModelName(size_t index) const
 {
-   static const char* const MODULE = "csm2to3plugin::getModelName";
+   EXCEPTION_TRY("csm2to3plugin::getModelName");
 
    if (index < 0)
    {
@@ -116,16 +154,25 @@ std::string csm2to3plugin::getModelName(size_t index) const
       msg << "Given index out of range: " << index << " < 0";
       throw csm::Error(csm::Error::INDEX_OUT_OF_RANGE, msg.str(), MODULE);
    }
-
-   if (index >= theOrderedNames.size())
+   
+   const int NUM_MODELS = getNumModels();
+   
+   if ((int)index >= NUM_MODELS)
    {
       std::ostringstream msg;
       msg << "Given index out of range: "
-          << index << " >= " << theOrderedNames.size();
+          << index << " >= " << NUM_MODELS;
       throw csm::Error(csm::Error::INDEX_OUT_OF_RANGE, msg.str(), MODULE);
    }
-
-   return theOrderedNames[index];
+   
+   std::string modelName = "unknown";
+               
+   DROP_WARNING(theTsmPlugin->getSensorModelName((int)index,
+                                                 modelName));
+   
+   return modelName;
+   
+   EXCEPTION_RETHROW_CONVERT;
 }
 
 //*****************************************************************************
@@ -145,21 +192,37 @@ csm::Version csm2to3plugin::getModelVersion(
 {
    EXCEPTION_TRY("csm2to3plugin::getModelVersion");
 
-   SensorNameMap::const_iterator it = theNameMap.find(modelName);
-   if (it == theNameMap.end())
+   csm::Version version(1,0,0);
+
+   int ver = 100;
+   DROP_WARNING(theTsmPlugin->getSensorModelVersion(modelName, ver));
+
+   if (ver > 0)
    {
-      throw csm::Error(csm::Error::SENSOR_MODEL_NOT_SUPPORTED,
-                       "Cannot find sensor model named " + modelName,
-                       MODULE);
+      //***
+      // For Version 2.A and earlier CSMs, the convention for versioning
+      // was to store the integer version as a 3 digit number, where the
+      // digits represent the major,minor, and revision components of the
+      // version respectively.  Some CSMs may not use this convention and
+      // may use less than 3 digits.  In this case we will just use the
+      // entire value as the major component of the version.
+      //***
+      if (ver >= 100)
+      {
+         int revision = ver % 10;
+         int minor    = (ver / 10) % 10;
+         int major    = ver / 100;
+         
+         version = csm::Version(major,minor,revision);
+      }
+      else
+      {
+         version = csm::Version(ver,0,0);
+      }
    }
-
-   int version = 0;
-   TSMWarning* w =
-      it->second->getSensorModelVersion(modelName, version);
-   if (w) delete w;
-
-   return csm::Version(version, 0);
-
+   
+   return version;
+  
    EXCEPTION_RETHROW_CONVERT;
 }
 
@@ -173,25 +236,14 @@ bool csm2to3plugin::canModelBeConstructedFromState(
 {
    EXCEPTION_TRY("csm2to3plugin::canModelBeConstructedFromState");
 
-   SensorNameMap::const_iterator it = theNameMap.find(modelName);
-   if (it == theNameMap.end())
-   {
-      throw csm::Error(csm::Error::SENSOR_MODEL_NOT_SUPPORTED,
-                       "Cannot find sensor model named " + modelName,
-                       MODULE);
-   }
-
    bool canConstruct = false;
-   TSMWarning* w =
-      it->second->canSensorModelBeConstructedFromState(modelName,
-                                                       modelState,
-                                                       canConstruct);
-   if (w)
-   {
-      if (warnings) warnings->push_back(CONVERT_WARNING(w));
-      delete w;
-   }
 
+   SAVE_WARNING(theTsmPlugin->
+                canSensorModelBeConstructedFromState(modelName,
+                                                     modelState,
+                                                     canConstruct),
+                warnings);
+   
    return canConstruct;
 
    EXCEPTION_RETHROW_CONVERT;
@@ -207,27 +259,14 @@ bool csm2to3plugin::canModelBeConstructedFromISD(
 {
    EXCEPTION_TRY("csm2to3plugin::canModelBeConstructedFromISD");
 
-   SensorNameMap::const_iterator it = theNameMap.find(modelName);
-   if (it == theNameMap.end())
-   {
-      throw csm::Error(csm::Error::SENSOR_MODEL_NOT_SUPPORTED,
-                       "Cannot find sensor model named " + modelName,
-                       MODULE);
-   }
-
    std::auto_ptr<tsm_ISD> tsmIsd(convertIsd(imageSupportData));
 
    bool canConstruct = false;
-   TSMWarning* w =
-      it->second->canSensorModelBeConstructedFromISD(*tsmIsd,
-                                                     modelName,
-                                                     canConstruct);
-   if (w)
-   {
-      if (warnings) warnings->push_back(CONVERT_WARNING(w));
-      delete w;
-   }
-
+   SAVE_WARNING(theTsmPlugin->
+                canSensorModelBeConstructedFromISD(*tsmIsd,
+                                                   modelName,
+                                                   canConstruct),
+                warnings);
    return canConstruct;
 
    EXCEPTION_RETHROW_CONVERT;
@@ -242,47 +281,26 @@ csm::Model* csm2to3plugin::constructModelFromState(
 {
    EXCEPTION_TRY("csm2to3plugin::constructModelFromState");
 
-   TSMPlugin::TSMPluginList* plugins = NULL;
-   TSMWarning* w = TSMPlugin::getList(plugins);
-   if (w) delete w;
-
-   if (plugins)
+   try
    {
-      for(TSMPlugin::TSMPluginList::const_iterator it = plugins->begin();
-          it != plugins->end(); ++it)
+      TSMSensorModel* tsmModel = NULL;
+      SAVE_WARNING(theTsmPlugin->
+                   constructSensorModelFromState(modelState,
+                                                 tsmModel),
+                   warnings);
+      
+      if (tsmModel != NULL)
       {
-         try
-         {
-            TSMSensorModel* tsmModel = NULL;
-            TSMWarning* w =
-               (*it)->constructSensorModelFromState(modelState,
-                                                    tsmModel);
-            if (w)
-            {
-               if (warnings) warnings->push_back(CONVERT_WARNING(w));
-               delete w;
-            }
+         std::string pluginName;
+         
+         SAVE_WARNING(theTsmPlugin->getPluginName(pluginName),warnings);
 
-            if (tsmModel != NULL)
-            {
-               std::string pluginName;
-               
-               TSMWarning* w2 =
-                  (*it)->getPluginName(pluginName);
-
-               if (w2)
-               {
-                  if (warnings) warnings->push_back(CONVERT_WARNING(w2));
-                  delete w2;
-               }
-               return new csm2to3model(tsmModel,pluginName);
-            }
-         }
-         catch(const TSMError& tsm)
-         {
-            // ignore any errors, probably from the wrong plugin
-         }
+         return new csm2to3model(tsmModel,pluginName);
       }
+   }
+   catch(const TSMError& tsm)
+   {
+      // ignore any errors, probably from the wrong plugin
    }
 
    throw csm::Error(csm::Error::SENSOR_MODEL_NOT_CONSTRUCTIBLE,
@@ -302,27 +320,14 @@ csm::Model* csm2to3plugin::constructModelFromISD(
 {
    EXCEPTION_TRY("csm2to3plugin::constructModelFromISD");
 
-   SensorNameMap::const_iterator it = theNameMap.find(modelName);
-   if (it == theNameMap.end())
-   {
-      throw csm::Error(csm::Error::SENSOR_MODEL_NOT_SUPPORTED,
-                       "Cannot find sensor model named " + modelName,
-                       MODULE);
-   }
-
    std::auto_ptr<tsm_ISD> tsmIsd(convertIsd(imageSupportData));
 
    TSMSensorModel* tsmModel = NULL;
-   TSMWarning* w =
-      it->second->constructSensorModelFromISD(*tsmIsd,
-                                              modelName,
-                                              tsmModel);
-   if (w)
-   {
-      if (warnings) warnings->push_back(CONVERT_WARNING(w));
-      delete w;
-   }
-
+   SAVE_WARNING(theTsmPlugin->constructSensorModelFromISD(*tsmIsd,
+                                                          modelName,
+                                                          tsmModel),
+                warnings);
+   
    if (tsmModel == NULL)
    {
       throw csm::Error(csm::Error::SENSOR_MODEL_NOT_CONSTRUCTIBLE,
@@ -331,14 +336,7 @@ csm::Model* csm2to3plugin::constructModelFromISD(
    }
 
    std::string pluginName;
-   TSMWarning* w2 =
-      it->second->getPluginName(pluginName);
-   
-   if (w2)
-   {
-      if (warnings) warnings->push_back(CONVERT_WARNING(w2));
-      delete w2;
-   }
+   SAVE_WARNING(theTsmPlugin->getPluginName(pluginName),warnings);
    
    return new csm2to3model(tsmModel,pluginName);
 
@@ -354,36 +352,25 @@ std::string csm2to3plugin::getModelNameFromModelState(
 {
    EXCEPTION_TRY("csm2to3plugin::getNModels");
 
-   TSMPlugin::TSMPluginList* plugins = NULL;
-   TSMWarning* w = TSMPlugin::getList(plugins);
-   if (w) delete w;
-
-   if (plugins)
+   try
    {
-      for(TSMPlugin::TSMPluginList::const_iterator it = plugins->begin();
-          it != plugins->end(); ++it)
-      {
-         try
-         {
-            std::string name;
-            w = (*it)->getSensorModelNameFromSensorModelState(modelState,
-                                                              name);
-            if (w)
-            {
-               if (warnings) warnings->push_back(CONVERT_WARNING(w));
-               delete w;
-            }
-
-            if (!name.empty()) return name;
-         }
-         catch(const TSMError& tsm)
-         {
-            // ignore any errors, probably from the wrong plugin
-         }
-      }
+      std::string name;
+      SAVE_WARNING(theTsmPlugin->
+                   getSensorModelNameFromSensorModelState(modelState,
+                                                          name),
+                   warnings);
+      
+      if (!name.empty()) return name;
+   }
+   catch(const TSMError& tsm)
+   {
+      // ignore any errors, probably from the wrong plugin
    }
 
-   return "";
+    throw csm::Error(csm::Error::INVALID_SENSOR_MODEL_STATE,
+                    "Provided state is not valid for this plugin.",
+                    MODULE);
+
 
    EXCEPTION_RETHROW_CONVERT;
 }
@@ -396,10 +383,22 @@ bool csm2to3plugin::canISDBeConvertedToModelState(
    const std::string& modelName,
    csm::WarningList* warnings) const
 {
-   // assume if we can make a sensor model, we can convert it to its state
-   return canModelBeConstructedFromISD(imageSupportData,
-                                             modelName,
-                                             warnings);
+   EXCEPTION_TRY("csm2to3plugin::canISDBeConvertedToModelState");
+   
+   std::auto_ptr<tsm_ISD> tsmIsd(convertIsd(imageSupportData));
+   
+   bool canConvert = false;
+   
+   
+   SAVE_WARNING(theTsmPlugin->
+                canISDBeConvertedToSensorModelState(*tsmIsd,
+                                                    modelName,
+                                                    canConvert),
+                warnings);
+   
+   return canConvert;
+
+   EXCEPTION_RETHROW_CONVERT;
 }
 
 //*****************************************************************************
@@ -411,18 +410,18 @@ std::string csm2to3plugin::convertISDToModelState(
    csm::WarningList* warnings) const
 {
    EXCEPTION_TRY("csm2to3plugin::convertISDToModelState");
-
-   csm::Model* model = constructModelFromISD(imageSupportData,
-                                                         modelName,
-                                                         warnings);
-   if (!model)
-   {
-      throw csm::Error(csm::Error::SENSOR_MODEL_NOT_CONSTRUCTIBLE,
-                       "Could not construct sensor model from ISD",
-                       MODULE);
-   }
-
-   return model->getModelState();
+   
+   std::auto_ptr<tsm_ISD> tsmIsd(convertIsd(imageSupportData));
+   
+   std::string modelState;
+   
+   SAVE_WARNING(theTsmPlugin->
+                convertISDToSensorModelState(*tsmIsd,
+                                             modelName,
+                                             modelState),
+                warnings);
+                                                       
+   return modelState;
 
    EXCEPTION_RETHROW_CONVERT;
 }
@@ -442,8 +441,14 @@ void convertTres(int& numTres, tre*& TREs,
    {
       strncpy(TREs[i].name, srcTres[i].name().c_str(), 6);
       TREs[i].name[6] = '\0';
-      TREs[i].length = srcTres[i].length();
-      TREs[i].record = strdup(srcTres[i].data().c_str());
+
+      int length = (int)srcTres[i].length();
+      TREs[i].length = length;
+       
+      TREs[i].record = new char[length+1];
+      strncpy(TREs[i].record,srcTres[i].data().c_str(),length);
+       // in case, NULL termination is needed
+      TREs[i].record[length] = '\0';   
    }
 }
 
@@ -461,15 +466,23 @@ TSM_NITF_ISD* convertNitfIsd(const csm::NitfIsd& nIsd)
    tsm->fileHeader = nIsd.fileHeader();
 
    convertTres(tsm->numTREs, tsm->fileTREs, nIsd.fileTres());
-
-   tsm->numDESs = nIsd.fileDess().size();
+   
+   const std::vector<csm::Des>& fileDes = nIsd.fileDess();
+   
+   tsm->numDESs = fileDes.size();
    tsm->fileDESs = new des[tsm->numDESs];
    for(size_t i = 0; i < (size_t)tsm->numDESs; ++i)
    {
-      tsm->fileDESs[i].desShLength = nIsd.fileDess()[i].subHeader().length();
-      tsm->fileDESs[i].desSh = strdup(nIsd.fileDess()[i].subHeader().c_str());
-      tsm->fileDESs[i].desDataLength = nIsd.fileDess()[i].data().length();
-      tsm->fileDESs[i].desData = strdup(nIsd.fileDess()[i].data().c_str());
+      const csm::Des& currentDes = fileDes[i];
+      const std::string& currentSubHdr = currentDes.subHeader();
+      const std::string& currentData   = currentDes.data();
+
+      int subhSize = currentSubHdr.length();
+      int dataSize = currentData.length();
+      tsm->fileDESs[i].setDES(subhSize,
+                              const_cast<char*>(currentSubHdr.c_str()),
+                              dataSize,
+                              const_cast<char*>(currentData.c_str()));
    }
 
    tsm->numImages = nIsd.images().size();
@@ -510,7 +523,7 @@ tsm_ISD* csm2to3plugin::convertIsd(const csm::Isd& isd)
       const csm::NitfIsd& nIsd = dynamic_cast<const csm::NitfIsd&>(isd);
 
       if (isd.format() == "NITF2.0")
-      {
+      { 
          return convertNitfIsd<NITF_2_0_ISD>(nIsd);
       }
       if (isd.format() == "NITF2.1")
@@ -523,46 +536,34 @@ tsm_ISD* csm2to3plugin::convertIsd(const csm::Isd& isd)
 }
 
 //*****************************************************************************
-// csm2to3plugin::loadTsmPlugins
+// csm2to3plugin::establishCsmPlugins
 //*****************************************************************************
-void csm2to3plugin::loadTsmPlugins()
+void csm2to3plugin::establishCsmPlugins()
 {
-   // TODO
-
-   loadNameMap();
-}
-
-//*****************************************************************************
-// csm2to3plugin::loadNameMap
-//*****************************************************************************
-void csm2to3plugin::loadNameMap()
-{
-   EXCEPTION_TRY("csm2to3plugin::loadNameMap");
-
+   EXCEPTION_TRY("csm2to3plugin::establishCsmPlugins");
+   
    TSMPlugin::TSMPluginList* plugins = NULL;
-   TSMWarning* w = TSMPlugin::getList(plugins);
-   if (w) delete w;
-
+   
+   DROP_WARNING(TSMPlugin::getList(plugins));
+      
    if (plugins)
    {
+      TSMPlugin::TSMPluginList::const_iterator TSM_END = plugins->end();
+      
       for(TSMPlugin::TSMPluginList::const_iterator it = plugins->begin();
-          it != plugins->end(); ++it)
+          it != TSM_END; ++it)
       {
-         int count = 0;
-         w = (*it)->getNSensorModels(count);
-         if (w) delete w;
-
-         for(int i = 0; i < count; ++count)
+         if (*it)
          {
-            std::string name;
-            w = (*it)->getSensorModelName(i, name);
-            if (w) delete w;
-
-            theOrderedNames.push_back(name);
-            theNameMap[name] = *it;
+            csm2to3plugin* pl2To3 = new csm2to3plugin(*it);
+            
+            if (pl2To3)
+            {
+               csm2to3plugin::INSTANCES.push_back(pl2To3);
+            }
          }
       }
    }
-
+   
    EXCEPTION_RETHROW_CONVERT;
 }

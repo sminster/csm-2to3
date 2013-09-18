@@ -1,6 +1,8 @@
 include Makefile
 
+ARCH=solaris
+
 CC=CC-12-p1
 COPTS=-KPIC -xtarget=ultra3 -xarch=sparcvis2 -xO3 -m32
 LDOPTS=-G -h $(LIBRARY)
-INSTDIR=$(PWD)/solaris
+
